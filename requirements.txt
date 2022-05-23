@@ -1,0 +1,14 @@
+# PIP #
+requests
+art
+alphabet_detector
+bs4
+folium
+pandas
+SPARQLWrapper
+wikipedia
+wptools
+pycurl
+
+# APT #
+curl libcurl4-openssl-dev
