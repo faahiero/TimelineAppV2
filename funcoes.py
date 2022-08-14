@@ -112,7 +112,7 @@ def get_info_person(search_term, is_correct_term):
 
         # URL da página, utilizado para fazer Webscraping diretamente na página do artigo e obter o nome completo,
         # caso não seja possível obter pela wptools, e também para compor o arquivo csv.
-        get_rest_base = page.get()
+        get_rest_base = page.get_restbase()
         page_url = get_rest_base.data['url']
 
         # NOME COMPLETO
