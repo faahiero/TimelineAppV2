@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import sys
 import webbrowser
 import wptools
 import wikipedia as wiki
@@ -68,7 +69,7 @@ def get_info_person(search_term, is_correct_term):
         if search_term == '0':
             clear_console()
             print("Obrigado por usar o software!!")
-            exit()
+            sys.exit()
 
     clear_console()
 
@@ -91,7 +92,7 @@ def get_info_person(search_term, is_correct_term):
         else:
             print("Refine sua busca e tente novamente")
             print("Obrigado por usar o software!!")
-            exit()
+            sys.exit()
 
     print("Obtendo informações...")
 
@@ -191,7 +192,7 @@ def get_info_person(search_term, is_correct_term):
         else:
             print("Refine sua busca e tente novamente")
             print("Obrigado por usar o software!!")
-            exit()
+            sys.exit()
 
 
 # Função para corrigir o termo buscado.
