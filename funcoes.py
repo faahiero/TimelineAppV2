@@ -3,7 +3,6 @@ import sys
 import webbrowser
 import wptools
 import wikipedia as wiki
-from urllib import parse
 import urllib
 import time
 from SPARQLWrapper import SPARQLWrapper, JSON
