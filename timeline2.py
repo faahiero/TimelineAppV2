@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import sys
 import time
 import funcoes as fncts
 
@@ -21,7 +22,7 @@ while option != '0':
         print("Gerando Visualizações")
         fncts.generate_visualization()
         time.sleep(5)
-        exit()
+        sys.exit()
     else:
         print("Opção Inválida")
     fncts.header()
