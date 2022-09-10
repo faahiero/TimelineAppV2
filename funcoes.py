@@ -18,6 +18,9 @@ from bs4 import BeautifulSoup
 import art
 from alphabet_detector import AlphabetDetector
 
+WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
+WIKIPEDIA_URL = "https://pt.wikipedia.org/"
+
 alphabet_detector = AlphabetDetector()
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -127,7 +130,7 @@ def get_info_person(search_term, is_correct_term):
         except KeyError:
             full_name = extract_full_name(page_url)
 
-        # Depois de conseguir o nome completo, começo a utilizar a lib SPARQLWrapper para obter os demais dados.
+        # Após conseguir o nome completo, começo a utilizar a biblioteca SPARQLWrapper para obter os demais dados.
         # A função query_wikidata retorna um objeto JSON com as informações necessárias.
         sparql_query_data = query_wikidata(correct_search_term)
 
@@ -191,11 +194,11 @@ def get_info_person(search_term, is_correct_term):
             exit()
 
 
-# Função para corrigir o termo que foi buscado.
+# Função para corrigir o termo buscado.
 def get_correct_search_term(search_term):
     corrected_search_term = None
     encoded_search_term = urllib.parse.quote_plus(search_term)
-    base_wikipedia_url = "https://pt.wikipedia.org/"
+    base_wikipedia_url = WIKIPEDIA_URL
     wikipedia_search_url = base_wikipedia_url+"w/index.php?search={}&title=Especial:Pesquisar&profile=advanced&" \
         "fulltext=1&ns0=1".format(encoded_search_term)
     page = requests.get(wikipedia_search_url)
@@ -246,10 +249,10 @@ def extract_full_name(page_url):
     return full_name
 
 
-# Função que utiliza a lib SPARQLWrapper para fazer a consulta no wikidata. Ao final da execução,
+# Função que utiliza a biblioteca SPARQLWrapper para fazer a consulta no wikidata. Ao final da execução,
 # ela monta um objeto, que é retornado para a função get_info_person sendo utilizado gerar um arquivo csv.
 def query_wikidata(term_to_query):
-    endpoint_url = "https://query.wikidata.org/sparql"
+    endpoint_url = WIKIDATA_SPARQL_ENDPOINT
 
     query = """
     SELECT ?item ?itemLabel ?imagem ?dataNascimento ?localNascimento ?localNascimentoLabel ?dataFalecimento ?localFalecimento 
@@ -360,7 +363,10 @@ def generate_visualization():
             popup=popup,
             tooltip=linha['Nome Completo']
         ).add_to(folium_map)
-    folium_map.save("data/" + timestamp_fname + 'map.html')
+
+        if not os.path.exists("data"):
+            os.makedirs("data")
+        folium_map.save("data/" + timestamp_fname + 'map.html')
 
     shutil.move('person_info.csv', 'data/' +
                 timestamp_fname + 'person_info.csv')
