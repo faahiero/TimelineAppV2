@@ -125,7 +125,7 @@ def get_info_person(search_term, is_correct_term):
             full_name = wiki_data['nome de nascimento (P1477)']
             if not alphabet_detector.is_latin(full_name):
                 full_name = extract_full_name(page_url)
-            if type(full_name) == list:
+            if type(full_name) is list:
                 full_name = ','.join(full_name).replace(',', ', ')
         except KeyError:
             full_name = extract_full_name(page_url)
