@@ -219,14 +219,11 @@ def get_correct_search_term(search_term):
         return corrected_search_term
 
     # palavra certa
-    elif soup.find('div', class_='mw-search-result-heading'):
+    if soup.find('div', class_='mw-search-result-heading'):
         corrected_search_term = soup.find(
             'div', class_='mw-search-result-heading').text.strip()
         return corrected_search_term
-
-    # termo não encontrado na wikipedia, logo, artigo não existe
-    else:
-        print("Artigo não encontrado na wikipedia")
+    print("Artigo não encontrado na wikipedia")
     get_info_person(corrected_search_term, False)
 
 
