@@ -332,7 +332,7 @@ def generate_visualization():
     df.to_csv("person_info.csv", index=False)
     folium_map = folium.Map()
 
-    for index, linha in df.iterrows():
+    for linha in df.iterrows():
         html = f"""
         <div id="dados" style='border:solid; border-radius:10px; width: 700px;height: 300px'>
             <div style="padding: 10px;margin-top:7px;float: right">
