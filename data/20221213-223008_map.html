@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_d164b11ae463714c5304fa154afe15d0 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_d164b11ae463714c5304fa154afe15d0" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_d164b11ae463714c5304fa154afe15d0 = L.map(
+                "map_d164b11ae463714c5304fa154afe15d0",
+                {
+                    center: [0, 0],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 1,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_858ca0544bbe62e79738dcbc1b23f146 = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "Data by \u0026copy; \u003ca target=\"_blank\" href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca target=\"_blank\" href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_d164b11ae463714c5304fa154afe15d0);
+        
+    
+            var marker_0b3131c2ae0654c50de2a72fa581340e = L.marker(
+                [-22.908333333, -43.196388888],
+                {}
+            ).addTo(map_d164b11ae463714c5304fa154afe15d0);
+        
+    
+        var popup_9ae942551474dd40cca72ba930df2568 = L.popup({"maxWidth": 2650});
+
+        
+            
+                var i_frame_547f582a0cbdd5ef5c39fce356ed0e32 = $(`<iframe src="data:text/html;charset=utf-8;base64,CiAgICAKICAgICAgICA8ZGl2IGlkPSJkYWRvcyIgc3R5bGU9J2JvcmRlcjpzb2xpZDsgYm9yZGVyLXJhZGl1czoxMHB4OyB3aWR0aDogNzAwcHg7aGVpZ2h0OiAzMDBweCc+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9InBhZGRpbmc6IDEwcHg7bWFyZ2luLXRvcDo3cHg7ZmxvYXQ6IHJpZ2h0Ij4KICAgICAgICAgICAgICAgIDxpbWcgc3JjPSJodHRwOi8vY29tbW9ucy53aWtpbWVkaWEub3JnL3dpa2kvU3BlY2lhbDpGaWxlUGF0aC9NYWNoYWRvJTIwZGUlMjBBc3NpcyUyMHJlYWwlMjBuZWdyby5qcGciCiAgICAgICAgICAgICAgICB3aWR0aD0iMTg5IiBoZWlnaHQ9IjI2NiIvPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGgyIHN0eWxlPSJ0ZXh0LWFsaWduOiBjZW50ZXIiPkpvYXF1aW0gTWFyaWEgTWFjaGFkbyBkZSBBc3NpczwvaDI+CiAgICAgICAgICAgICAgICA8cCBzdHlsZT0iZm9udC13ZWlnaHQ6IGJvbGQ7bWFyZ2luLWxlZnQ6IDIwcHgiPkRhZG9zIEJpb2dyw6FmaWNvczwvcD4KICAgICAgICAgICAgICAgICAgICA8dWwgc3R5bGU9Im1hcmdpbi1sZWZ0OiAyMHB4Ij4KICAgICAgICAgICAgICAgICAgICAgICAgPGxpPk9yaWdlbS9OYWNpb25hbGlkYWRlOiBCcmFzaWw8L2xpPiAgICAKICAgICAgICAgICAgICAgICAgICAgICAgPGxpPkRhdGEgZGUgTmFzY2ltZW50bzogMjEgZGUganVuaG8gZGUgMTgzOTwvbGk+CiAgICAgICAgICAgICAgICAgICAgICAgIDxsaT5Mb2NhbCBkZSBOYXNjaW1lbnRvOiBSaW8gZGUgSmFuZWlybzwvbGk+CiAgICAgICAgICAgICAgICAgICAgICAgIDxsaT5EYXRhIGRlIEZhbGVjaW1lbnRvOiAyOSBkZSBzZXRlbWJybyBkZSAxOTA4PC9saT4KICAgICAgICAgICAgICAgICAgICAgICAgPGxpPkxvY2FsIGRlIEZhbGVjaW1lbnRvOiBSaW8gZGUgSmFuZWlybzwvbGk+CiAgICAgICAgICAgICAgICAgICAgPC91bD4KICAgICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgPHAgc3R5bGU9Im1hcmdpbi1sZWZ0OiAyMHB4Ij5MaW5rIHBhcmEgYXJ0aWdvIGNvbXBsZXRvIG5hICA8YSBocmVmPSJodHRwczovL3B0Lndpa2lwZWRpYS5vcmcvd2lraS9NYWNoYWRvX2RlX0Fzc2lzIiAKICAgICAgICAgICAgdGFyZ2V0PSJfYmxhbmsiPldpa2lwZWRpYTwvYT48L3A+CiAgICAgICAgPC9kaXY+CiAgICAgICAg" width="730" style="border:none !important;" height="330"></iframe>`)[0];
+                popup_9ae942551474dd40cca72ba930df2568.setContent(i_frame_547f582a0cbdd5ef5c39fce356ed0e32);
+            
+        
+
+        marker_0b3131c2ae0654c50de2a72fa581340e.bindPopup(popup_9ae942551474dd40cca72ba930df2568)
+        ;
+
+        
+    
+    
+            marker_0b3131c2ae0654c50de2a72fa581340e.bindTooltip(
+                `<div>
+                     Joaquim Maria Machado de Assis
+                 </div>`,
+                {"sticky": true}
+            );
+        
+</script>
+</html>

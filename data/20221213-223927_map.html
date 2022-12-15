@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_3bdc0e9325405ea4dab78d47a46c8365 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_3bdc0e9325405ea4dab78d47a46c8365" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_3bdc0e9325405ea4dab78d47a46c8365 = L.map(
+                "map_3bdc0e9325405ea4dab78d47a46c8365",
+                {
+                    center: [0, 0],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 1,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_b0ea482f081ec7cf5e4f7ffebe113a03 = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "Data by \u0026copy; \u003ca target=\"_blank\" href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca target=\"_blank\" href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_3bdc0e9325405ea4dab78d47a46c8365);
+        
+    
+            var marker_53ac92b678320d6951e13a7f15c2351b = L.marker(
+                [59.95, 30.316666666],
+                {}
+            ).addTo(map_3bdc0e9325405ea4dab78d47a46c8365);
+        
+    
+        var popup_971b15d923bebda752a2758820047827 = L.popup({"maxWidth": 2650});
+
+        
+            
+                var i_frame_c32c8749dfc503366f375829b2c75b89 = $(`<iframe src="data:text/html;charset=utf-8;base64,CiAgICAKICAgICAgICA8ZGl2IGlkPSJkYWRvcyIgc3R5bGU9J2JvcmRlcjpzb2xpZDsgYm9yZGVyLXJhZGl1czoxMHB4OyB3aWR0aDogNzAwcHg7aGVpZ2h0OiAzMDBweCc+CiAgICAgICAgICAgIDxkaXYgc3R5bGU9InBhZGRpbmc6IDEwcHg7bWFyZ2luLXRvcDo3cHg7ZmxvYXQ6IHJpZ2h0Ij4KICAgICAgICAgICAgICAgIDxpbWcgc3JjPSJodHRwOi8vY29tbW9ucy53aWtpbWVkaWEub3JnL3dpa2kvU3BlY2lhbDpGaWxlUGF0aC9SSUFOJTIwYXJjaGl2ZSUyMDEwMDMwNiUyMFZsYWRpbWlyJTIwUHV0aW4lMkMlMjBGZWRlcmFsJTIwU2VjdXJpdHklMjBTZXJ2aWNlJTIwRGlyZWN0b3IuanBnIgogICAgICAgICAgICAgICAgd2lkdGg9IjE4OSIgaGVpZ2h0PSIyNjYiLz4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxoMiBzdHlsZT0idGV4dC1hbGlnbjogY2VudGVyIj5WbGFkaW1pciBWbGFkaW1pcm92aXRjaCBQdXRpbjwvaDI+CiAgICAgICAgICAgICAgICA8cCBzdHlsZT0iZm9udC13ZWlnaHQ6IGJvbGQ7bWFyZ2luLWxlZnQ6IDIwcHgiPkRhZG9zIEJpb2dyw6FmaWNvczwvcD4KICAgICAgICAgICAgICAgICAgICA8dWwgc3R5bGU9Im1hcmdpbi1sZWZ0OiAyMHB4Ij4KICAgICAgICAgICAgICAgICAgICAgICAgPGxpPk9yaWdlbS9OYWNpb25hbGlkYWRlOiBSw7pzc2lhPC9saT4gICAgCiAgICAgICAgICAgICAgICAgICAgICAgIDxsaT5EYXRhIGRlIE5hc2NpbWVudG86IDA3IGRlIG91dHVicm8gZGUgMTk1MjwvbGk+CiAgICAgICAgICAgICAgICAgICAgICAgIDxsaT5Mb2NhbCBkZSBOYXNjaW1lbnRvOiBTw6NvIFBldGVyc2J1cmdvPC9saT4KICAgICAgICAgICAgICAgICAgICAgICAgPGxpPkRhdGEgZGUgRmFsZWNpbWVudG86IC08L2xpPgogICAgICAgICAgICAgICAgICAgICAgICA8bGk+TG9jYWwgZGUgRmFsZWNpbWVudG86IC08L2xpPgogICAgICAgICAgICAgICAgICAgIDwvdWw+CiAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgIDxwIHN0eWxlPSJtYXJnaW4tbGVmdDogMjBweCI+TGluayBwYXJhIGFydGlnbyBjb21wbGV0byBuYSAgPGEgaHJlZj0iaHR0cHM6Ly9wdC53aWtpcGVkaWEub3JnL3dpa2kvVmxhZGltaXJfUHV0aW4iIAogICAgICAgICAgICB0YXJnZXQ9Il9ibGFuayI+V2lraXBlZGlhPC9hPjwvcD4KICAgICAgICA8L2Rpdj4KICAgICAgICA=" width="730" style="border:none !important;" height="330"></iframe>`)[0];
+                popup_971b15d923bebda752a2758820047827.setContent(i_frame_c32c8749dfc503366f375829b2c75b89);
+            
+        
+
+        marker_53ac92b678320d6951e13a7f15c2351b.bindPopup(popup_971b15d923bebda752a2758820047827)
+        ;
+
+        
+    
+    
+            marker_53ac92b678320d6951e13a7f15c2351b.bindTooltip(
+                `<div>
+                     Vladimir Vladimirovitch Putin
+                 </div>`,
+                {"sticky": true}
+            );
+        
+</script>
+</html>

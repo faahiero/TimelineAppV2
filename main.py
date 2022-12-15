@@ -2,17 +2,19 @@
 # -*- coding: utf-8 -*-
 import sys
 import time
-import funcoes as fncts
+from modules.retrieve_information import *
+from modules.generate_visualization import *
+from modules.utils import *
 
-fncts.header()
-fncts.menu()
+header()
+menu()
 
 option = input("Escolha uma das opções acima: ")
 
 while option != '0':
     if option == '1':
         # clear_console()
-        fncts.get_info_person("", False)
+        retrieve_information("", False)
     # elif option == '2':
     #     # clear_console()
     #     print("Obtendo informações...")
@@ -20,14 +22,14 @@ while option != '0':
     #     # clear_console()
     elif option == '2':
         print("Gerando Visualizações")
-        fncts.generate_visualization()
+        generate_visualization()
         time.sleep(5)
         sys.exit()
     else:
         print("Opção Inválida")
-    fncts.header()
-    fncts.menu()
+    header()
+    menu()
     option = input("Escolha uma das opções acima: ")
 
-fncts.clear_console()
+clear_console()
 print("Obrigado por usar o software!!")
