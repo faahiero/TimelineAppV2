@@ -13,6 +13,10 @@ import folium
 # Função que gera a visualização com as informações salvas no arquivo csv.
 def generate_visualization():
     timestamp_fname = time.strftime("%Y%m%d-%H%M%S") + "_"
+    #check if file exists
+    if not os.path.exists("person_info.csv"):
+        print("Arquivo não encontrado")
+        return
     df = pd.read_csv("person_info.csv")
 
     df["Século"] = ""
@@ -94,10 +98,27 @@ def generate_visualization():
             id='map',
             srcDoc=open('data/' + timestamp_fname + 'map.html', 'r').read(),
             width='100%',
-            height='100%'
+            height='600',
+            style=dict(
+                verticalAlign="middle",
+                padding="10px 0px 0px 0px",
+                display='inline-block'
+            )
         ),
 
-        dcc.Graph(id='dash-map', figure={'data': data, 'layout': layout}),
+
+        dash.html.Div(
+            dcc.Graph(id='dash-map', figure={'data': data, 'layout': layout}),
+            style=dict(
+                width='100%',
+                height='600',
+                verticalAlign="middle",
+                padding="10px 0px 0px 0px",
+                display='inline-block'
+            )
+        ),
+
+        # dcc.Graph(id='dash-map', figure={'data': data, 'layout': layout}),
 
         dash.html.Div(dcc.RangeSlider(
             id='seculo-slider',
@@ -148,8 +169,6 @@ def generate_visualization():
                  "<b>Data de Nascimento: </b>" + filtered_df['Data de Nascimento'] + "<br>" +
                  "<b>Local de Nascimento: </b>" + filtered_df['Local de Nascimento'] + "<br>" +
                  "<b>Local de Falecimento: </b>" + filtered_df['Local de Falecimento'] + "<br>" +
-                 "<b>Latitude: </b>" + filtered_df['Latitude'].astype(str) + "<br>" +
-                 "<b>Longitude: </b>" + filtered_df['Longitude'].astype(str) + "<br>" +
                  "<b>Século: </b>" + filtered_df['Século'].astype(str),
         ))
         return {
