@@ -1,9 +1,10 @@
 import urllib
+
 import requests
 from bs4 import BeautifulSoup
-from modules.retrieve_information import *
 
 WIKIPEDIA_URL = "https://pt.wikipedia.org/"
+
 
 # Função para corrigir o termo buscado, através de webscraping na página de pesquisa da wikipedia,
 # para garantir que seja encontrado o artigo correto.
@@ -11,8 +12,8 @@ def get_correct_search_term(search_term):
     corrected_search_term = None
     encoded_search_term = urllib.parse.quote_plus(search_term)
     base_wikipedia_url = WIKIPEDIA_URL
-    wikipedia_search_url = base_wikipedia_url+"w/index.php?search={}&title=Especial:Pesquisar&profile=advanced&" \
-        "fulltext=1&ns0=1".format(encoded_search_term)
+    wikipedia_search_url = base_wikipedia_url + "w/index.php?search={}&title=Especial:Pesquisar&profile=advanced&" \
+                                                "fulltext=1&ns0=1".format(encoded_search_term)
     page = requests.get(wikipedia_search_url)
     soup = BeautifulSoup(page.content, 'html.parser')
 
@@ -36,12 +37,14 @@ def get_correct_search_term(search_term):
             'div', class_='mw-search-result-heading').text.strip()
         return corrected_search_term
     print("Artigo não encontrado na wikipedia")
-    retrieve_information(corrected_search_term, False)
-
+    # retrieve_information(corrected_search_term, False)
+    # info_gathering.retrieve_information(corrected_search_term, False)
+    return
 
 
 # Função para obter o nome completo, caso não consiga utilizar a wptools.
 def extract_full_name(page_url):
+    global full_name
     request_page = requests.get(page_url)
     soup = BeautifulSoup(request_page.text, 'html.parser')
 
@@ -59,7 +62,6 @@ def extract_full_name(page_url):
             full_name = div.find('p').find('b').text.replace(",", "").strip()
             break
 
-    
     # full_name = soup.find(
     #     'div', attrs={'class': 'mw-parser-output'}).p.b.text.replace(",", "").strip()
     return full_name

@@ -2,34 +2,32 @@
 # -*- coding: utf-8 -*-
 import sys
 import time
-from modules.retrieve_information import *
-from modules.generate_visualization import *
-from modules.utils import *
 
-header()
-menu()
+from modules.utils import clear_console, menu
+from modules.info_gathering import fetch_data
+from modules.vis_functions import generate_visualization, generate_visualization_history
 
-option = input("Escolha uma das opções acima: ")
-
-while option != '0':
-    if option == '1':
-        # clear_console()
-        retrieve_information("", False)
-    # elif option == '2':
-    #     # clear_console()
-    #     print("Obtendo informações...")
-    #     time.sleep(5)
-    #     # clear_console()
-    elif option == '2':
-        print("Gerando Visualizações")
+while True:
+    clear_console()
+    menu()
+    options = input("Escolha uma das opções: ")
+    if options == "1":
+        fetch_data("", False)
+    elif options == "2":
+        clear_console()
+        print("Gerando visualizações")
         generate_visualization()
-        time.sleep(5)
+    elif options == "3":
+        clear_console()
+        print("Histórico de navegação")
+        generate_visualization_history()
+    elif options == "0":
+        clear_console()
+        print("Saindo...")
+        print("Obrigado por usar o software!!")
+        time.sleep(1)
         sys.exit()
     else:
-        print("Opção Inválida")
-    header()
-    menu()
-    option = input("Escolha uma das opções acima: ")
+        print("Opção inválida")
+        time.sleep(1)
 
-clear_console()
-print("Obrigado por usar o software!!")

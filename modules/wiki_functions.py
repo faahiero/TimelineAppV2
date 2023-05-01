@@ -9,8 +9,9 @@ locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
+
 # Função que utiliza a biblioteca SPARQLWrapper para fazer a consulta no wikidata. Ao final da execução,
-# ela monta um objeto, que é retornado para a função get_info_person sendo utilizado gerar um arquivo csv.
+# ela monta um objeto, retornado para a função get_info_person sendo utilizado gerar um arquivo csv.
 def sparql_query_wikidata(term_to_query):
     endpoint_url = WIKIDATA_SPARQL_ENDPOINT
 
@@ -20,11 +21,11 @@ def sparql_query_wikidata(term_to_query):
       WHERE {{
         ?item wdt:P31 wd:Q5 .
         ?item ?label "{term_to_query}"@pt .
-        ?item wdt:P18 ?imagem .
         ?item wdt:P569 ?dataNascimento .
         ?item wdt:P19 ?localNascimento .
         ?localNascimento wdt:P17 ?pais .
         ?localNascimento wdt:P625 ?geo .
+        OPTIONAL {{ ?item wdt:P18 ?imagem . }}
         OPTIONAL {{ ?item wdt:P570 ?dataFalecimento . }}
         OPTIONAL {{ ?item wdt:P20 ?localFalecimento . }}
         SERVICE wikibase:label {{ bd:serviceParam wikibase:language "pt,en" }}
@@ -39,7 +40,15 @@ def sparql_query_wikidata(term_to_query):
     sparql.setReturnFormat(JSON)
     query_results = sparql.query().convert()['results']['bindings']
 
-    imagem = query_results[0]['imagem']['value']
+    if not query_results:
+        return None
+
+    # check if have imagem property in query
+    if 'imagem' in query_results[0]:
+        imagem = (query_results[0]["imagem"]["value"])
+    else:
+        imagem = 'Sem Imagem'
+
     pais = (query_results[0]["paisLabel"]["value"])
     data_nascimento = (query_results[0]["dataNascimento"]["value"])
     if data_nascimento[0] == '-':
@@ -86,7 +95,6 @@ def sparql_query_wikidata(term_to_query):
     }
 
     return query_results
-
 
 
 # Função que utiliza wptools para fazer uma busca na wikidata por um termo.

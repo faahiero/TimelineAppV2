@@ -9,6 +9,7 @@ SPARQLWrapper
 wikipedia
 wptools
 pycurl
+dash
 
 # APT #
 curl libcurl4-openssl-dev
