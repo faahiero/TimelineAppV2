@@ -6,7 +6,7 @@ alphabet_detector = AlphabetDetector()
 
 
 import modules.webscraping_functions as webscraping
-from modules.utils import clear_console, write_to_csv
+from modules.utils import clear_console, write_to_csv, calcula_seculo
 from modules.wiki_functions import search_wikidata, get_summary, sparql_query_wikidata
 
 attempts = 0
@@ -117,12 +117,12 @@ def fetch_data(search_term, is_correct_term):
         local_falecimento = sparql_query_data['Local de Falecimento']
         latitude = sparql_query_data['Latitude']
         longitude = sparql_query_data['Longitude']
-        seculo = None
+        seculo = calcula_seculo(data_nascimento)
 
-        ano = int(data_nascimento.split()[-1])
-        if ano % 100 == 0:
-            ano -= 1
-        seculo = (ano // 100) + 1
+        # ano = int(data_nascimento.split()[-1])
+        # if ano % 100 == 0:
+        #     ano -= 1
+        # seculo = (ano // 100) + 1
 
         person_info = {
             "Termo Buscado": search_term,

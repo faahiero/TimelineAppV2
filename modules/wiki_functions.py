@@ -3,6 +3,7 @@ import wptools
 import wikipedia as wiki
 from datetime import datetime
 from SPARQLWrapper import SPARQLWrapper, JSON
+from urllib.parse import unquote
 
 wiki.set_lang('pt')
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -52,17 +53,31 @@ def sparql_query_wikidata(term_to_query):
     pais = (query_results[0]["paisLabel"]["value"])
     data_nascimento = (query_results[0]["dataNascimento"]["value"])
     if data_nascimento[0] == '-':
-        data_nascimento = data_nascimento[1:]
-    data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%dT%H:%M:%SZ')
-    data_nascimento = data_nascimento.strftime('%d de %B de %Y')
+        ano_ac = data_nascimento[1:5]
+        # Converte o ano antes de Cristo para inteiro e adiciona " a.C."
+        ano_ac = int(ano_ac)
+        ano_formatado = "{} a.C.".format(ano_ac)
+        data_nascimento = ano_formatado
+        # data_nascimento = data_nascimento[1:]
+    else:
+        data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%dT%H:%M:%SZ')
+        data_nascimento = data_nascimento.strftime('%d de %B de %Y')
 
     if 'dataFalecimento' in query_results[0]:
-        data_falecimento = (query_results[0]["dataFalecimento"]["value"])
+        data_falecimento = query_results[0]["dataFalecimento"]["value"]
         if data_falecimento[0] == '-':
-            data_falecimento = data_falecimento[1:]
-        data_falecimento = datetime.strptime(
-            data_falecimento, '%Y-%m-%dT%H:%M:%SZ')
-        data_falecimento = data_falecimento.strftime('%d de %B de %Y')
+            ano_ac = data_falecimento[1:5]
+            # Converte o ano antes de Cristo para inteiro e adiciona " a.C."
+            ano_ac = int(ano_ac)
+            ano_formatado = "{} a.C.".format(ano_ac)
+            data_falecimento = ano_formatado
+        else:
+            try:
+                data_falecimento = datetime.strptime(data_falecimento, '%Y-%m-%dT%H:%M:%SZ')
+                data_falecimento = data_falecimento.strftime('%d de %B de %Y')
+            except ValueError:
+                # A data_falecimento não está no formato esperado
+                data_falecimento = '-'
     else:
         data_falecimento = '-'
 
@@ -111,3 +126,11 @@ def search_wikidata(search_term):
 # na tela para confirmar a busca.
 def get_summary(correct_search_term, sentences=2):
     return wiki.summary(correct_search_term, sentences=sentences)
+
+
+def get_wikipedia_history(histories):
+    wikipedia_history = []
+    for dt, url in histories:
+        if "wikipedia.org/wiki" in url:
+            wikipedia_history.append(unquote(url.split("/")[-1]).replace("_", " "))
+    return wikipedia_history

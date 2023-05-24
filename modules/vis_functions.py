@@ -5,22 +5,23 @@ import time
 from datetime import datetime
 from urllib.parse import unquote
 
-import pandas as pd
 import dash
 import dash_leaflet as dl
+import pandas as pd
 import wptools
-from dash import dcc, html, Input, Output
 from alphabet_detector import AlphabetDetector
 from browser_history import get_history
+from dash import dcc, html, Input, Output
 
+from modules.browse_history_info_gathering import get_browse_history_person_info
 from modules.plot_components.dropdown_menu import dropdown_component
 from modules.plot_components.popup import popup_html
+from modules.plot_components.range_slider import range_slide_component
 from modules.plots.bar_plot import stacked_bar_plot
 from modules.plots.scatter_plot import scatter_plot_chart
-from modules.plot_components.range_slider import range_slide_component
-from modules.utils import clear_console, write_to_csv
-from modules.webscraping_functions import extract_full_name
+from modules.utils import clear_console, write_to_csv, calcula_seculo
 from modules.wiki_functions import sparql_query_wikidata
+from modules.webscraping_functions import extract_full_name
 
 alphabet_detector = AlphabetDetector()
 
@@ -105,24 +106,52 @@ def generate_visualization(browser_history=False):
         )
     ])
 
+    # @app.callback(
+    #     Output("map", "children"),
+    #     [Input("map", "id")], Input("seculo-slider", "value"), Input("name-dropdown", "value")
+    # )
+    # def update_layer(layer_id, seculo, name):
+    #     if name is None or len(name) == 0:
+    #         return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
+    #             dl.Tooltip(row["Nome Completo"]),
+    #             popup_html(row)
+    #         ]) for idx, row in df.iterrows() if seculo[0] <= row["Século"] <= seculo[1]]
+    #     else:
+    #         return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
+    #             dl.Tooltip(row["Nome Completo"]),
+    #             popup_html(row)
+    #         ]) for idx, row in df.iterrows() if
+    #                 row["Nome Completo"] in name and seculo[0] <= row["Século"] <= seculo[1]]
+
     @app.callback(
         Output("map", "children"),
-        [Input("map", "id")], Input("seculo-slider", "value"), Input("name-dropdown", "value")
+        [Input("map", "id")],
+        Input("seculo-slider", "value"),
+        Input("name-dropdown", "value")
     )
     def update_layer(layer_id, seculo, name):
         if name is None or len(name) == 0:
+            seculo_min = int(seculo[0])
+            seculo_max = int(seculo[1])
             return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
                 dl.Tooltip(row["Nome Completo"]),
                 popup_html(row)
-            ]) for idx, row in df.iterrows() if seculo[0] <= row["Século"] <= seculo[1]]
+            ]) for idx, row in df.iterrows() if seculo_min <= parse_seculo(row["Século"]) <= seculo_max]
         else:
+            seculo_min = int(seculo[0])
+            seculo_max = int(seculo[1])
             return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
                 dl.Tooltip(row["Nome Completo"]),
                 popup_html(row)
             ]) for idx, row in df.iterrows() if
-                    row["Nome Completo"] in name and seculo[0] <= row["Século"] <= seculo[1]]
+                    row["Nome Completo"] in name and seculo_min <= parse_seculo(row["Século"]) <= seculo_max]
 
 
+    def parse_seculo(valor):
+        if "a.C." in str(valor):
+            return -int(valor.replace(" a.C.", ""))
+        else:
+            return int(valor)
 
     if not os.path.exists("data/"):
         os.makedirs("data/")
@@ -133,10 +162,6 @@ def generate_visualization(browser_history=False):
 
 
 def generate_visualization_history():
-
-    #create an empty dataframe
-    pd.DataFrame()
-
     FILE_NAME = "browser_history_person_info.csv"
     clear_console()
     print("Obtendo histórico dos navagadores instalados")
@@ -165,7 +190,6 @@ def generate_visualization_history():
     # time.sleep(2)
     # print()
 
-    wiki_page = ""
     wikipedia_search = []
     person_info = []
 
@@ -194,7 +218,6 @@ def generate_visualization_history():
                 full_name = extract_full_name(page_url)
 
             sparql_query_data = sparql_query_wikidata(entry)
-
             if sparql_query_data is None:
                 continue
 
@@ -206,12 +229,7 @@ def generate_visualization_history():
             local_falecimento = sparql_query_data["Local de Falecimento"]
             latitude = sparql_query_data["Latitude"]
             longitude = sparql_query_data["Longitude"]
-            seculo = None
-
-            ano = int(data_nascimento.split()[-1])
-            if ano % 100 == 0:
-                ano -= 1
-            seculo = (ano // 100) + 1
+            seculo = calcula_seculo(data_nascimento)
 
             person_info.append({
                 "Termo Buscado": entry,

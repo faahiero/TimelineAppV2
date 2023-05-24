@@ -51,3 +51,23 @@ def write_to_csv(person_info, file_name):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow(person_info)
 
+
+def calcula_seculo(data: str):
+    # check if date contains a.C
+    if data.find("a.C") != -1:
+        ano = int(data.split()[0])
+
+        # Calcula o século
+        seculo = ((ano - 1) // 100) + 1
+
+        # Formata a string de retorno
+        seculo_formatado = "{} a.C.".format(seculo)
+
+        return seculo_formatado
+    else:
+        ano = int(data.split()[-1])
+        if ano % 100 == 0:
+            ano -= 1
+        seculo_formatado = (ano // 100) + 1
+
+        return seculo_formatado
