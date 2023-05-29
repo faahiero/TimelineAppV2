@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import time
+import webbrowser
 from datetime import datetime
 from urllib.parse import unquote
 
@@ -158,6 +159,7 @@ def generate_visualization(browser_history=False):
     shutil.move(FILE_NAME, "data/" + timestamp_fname + FILE_NAME)
 
     # run server and wait for execution and hide messages
+    webbrowser.open("http://127.0.0.1:8050/")
     app.run(use_reloader=False, debug=True)
 
 
