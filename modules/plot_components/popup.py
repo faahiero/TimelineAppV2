@@ -1,17 +1,24 @@
 import dash_leaflet as dl
 from dash import dcc, html, Input, Output
 
+
 def popup_html(row):
     return dl.Popup([
+
         html.Div([
-            html.H2(row["Nome Completo"], style=dict(textAlign='center', fontSize=24)),
+            html.H2(row["Nome Completo"], style=dict(textAlign='center', fontSize=24, marginTop=0, marginBottom=0)),
+        ]),
+
+        html.Div([
+            html.H3("(" + row["Termo Buscado"] + ")",
+                    style=dict(textAlign='center',fontSize=18, marginTop=0, marginBottom=0, color="firebrick"))
         ]),
 
         html.Div([
             html.P("Dados Biográficos", style={"fontWeight": "bold", "fontSize": "16px"}),
         ]),
 
-        #check if row["Imagem"] is "Sem Imagem". If it is, create a div with the text "Sem Imagem"
+        # check if row["Imagem"] is "Sem Imagem". If it is, create a div with the text "Sem Imagem"
         html.Div([
             html.Img(src=row["Imagem"], style=dict(width="100%", height="100%")),
         ]) if row["Imagem"] != "Sem Imagem" else html.Div([
