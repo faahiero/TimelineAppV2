@@ -10,8 +10,13 @@ def clear_console():
 
 # Menu do programa
 def menu():
+    AZUL = "\033[1;34m"
+    NORMAL = "\033[0m"
+
+    print(AZUL)
     banner = art.text2art("Wikipedia GeoHist", font="small")
     print(banner)
+    print(NORMAL)
     print("[1] - Buscar (Ex.: 'Machado de Assis')")
     print("[2] - Gerar visualização")
     print("[3] - Gerar visualização histórico de navegação")
