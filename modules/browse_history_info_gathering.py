@@ -1,11 +1,11 @@
 import wptools
 from alphabet_detector import AlphabetDetector
 
-alphabet_detector = AlphabetDetector()
-
-from modules.webscraping_functions import extract_full_name
 from modules.utils import calcula_seculo
+from modules.webscraping_functions import extract_full_name
 from modules.wiki_functions import sparql_query_wikidata
+
+alphabet_detector = AlphabetDetector()
 
 
 def get_browse_history_person_info(wikipedia_history):
@@ -47,20 +47,22 @@ def get_browse_history_person_info(wikipedia_history):
             longitude = sparql_query_data["Longitude"]
             seculo = calcula_seculo(data_nascimento)
 
-            person_info.append({
-                "Termo Buscado": entry,
-                "Nome Completo": full_name,
-                "Origem/Nacionalidade": origem,
-                "Data de Nascimento": data_nascimento,
-                "Local de Nascimento": local_nascimento,
-                "Data de Falecimento": data_falecimento,
-                "Local de Falecimento": local_falecimento,
-                "Século": seculo,
-                "Latitude": latitude,
-                "Longitude": longitude,
-                "Url": page_url,
-                "Imagem": imagem,
-            })
+            person_info.append(
+                {
+                    "Termo Buscado": entry,
+                    "Nome Completo": full_name,
+                    "Origem/Nacionalidade": origem,
+                    "Data de Nascimento": data_nascimento,
+                    "Local de Nascimento": local_nascimento,
+                    "Data de Falecimento": data_falecimento,
+                    "Local de Falecimento": local_falecimento,
+                    "Século": seculo,
+                    "Latitude": latitude,
+                    "Longitude": longitude,
+                    "Url": page_url,
+                    "Imagem": imagem,
+                }
+            )
 
     # remove duplicates from person_info
     person_info = [dict(t) for t in {tuple(d.items()) for d in person_info}]

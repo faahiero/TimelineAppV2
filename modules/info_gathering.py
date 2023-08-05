@@ -2,32 +2,33 @@ import sys
 import time
 
 from alphabet_detector import AlphabetDetector
-alphabet_detector = AlphabetDetector()
-
 
 import modules.webscraping_functions as webscraping
-from modules.utils import clear_console, write_to_csv, calcula_seculo
-from modules.wiki_functions import search_wikidata, get_summary, sparql_query_wikidata
+from modules.utils import calcula_seculo, clear_console, write_to_csv
+from modules.wiki_functions import get_summary, search_wikidata, sparql_query_wikidata
+
+alphabet_detector = AlphabetDetector()
 
 attempts = 0
 
 
-# Função principal da aplicação, responsável por obter os dados solicitados. Ela chama as outras funções.
-# Ao final da execução, gera um arquivo csv que será utilizado para gerar a visualização.
+# Função principal da aplicação, responsável por obter os dados solicitados.
+# Ela chama as outras funções. Ao final da execução, gera um arquivo csv que
+# será utilizado para gerar a visualização.
 def fetch_data(search_term, is_correct_term):
     FILE_NAME = "person_info.csv"
     global attempts
     if not is_correct_term:
-        search_term = input(
-            "Digite o nome da personalidade (0 para encerrar): ")
-        if search_term == '0':
+        search_term = input("Digite o nome da personalidade (0 para encerrar): ")
+        if search_term == "0":
             clear_console()
             print("Obrigado por usar o software!!")
             sys.exit()
 
     clear_console()
 
-    # Chamada da função que tenta corrigir o termo de busca, para garantir que o termo exista na wikipedia.
+    # Chamada da função que tenta corrigir o termo de busca,
+    # para garantir que o termo exista na wikipedia.
     correct_search_term = webscraping.get_correct_search_term(search_term)
     if correct_search_term is None:
         time.sleep(4)
@@ -38,10 +39,10 @@ def fetch_data(search_term, is_correct_term):
     page = search_wikidata(correct_search_term)
     get_wiki_data = page.get_wikidata()
 
-    # Verifica se a instância da wikidata referente ao termo buscado possui a propriedade 'Q5',
-    # que representa um ser humano, logo entende-se que é uma pessoa.
-    wikidata_labels = get_wiki_data.data['labels']
-    if 'Q5' not in wikidata_labels:
+    # Verifica se a instância da wikidata referente ao termo buscado possui a
+    # propriedade 'Q5', que representa um ser humano, logo entende-se que é uma pessoa.
+    wikidata_labels = get_wiki_data.data["labels"]
+    if "Q5" not in wikidata_labels:
         print("Termo buscado não é uma pessoa. Tente novamente.")
         time.sleep(4)
         return
@@ -77,29 +78,29 @@ def fetch_data(search_term, is_correct_term):
         print()
         user_option = input("A informação está correta? (s/n): ")
         answer = user_option.lower()
-        if user_option == '' or answer not in ['s', 'n']:
+        if user_option == "" or answer not in ["s", "n"]:
             print("Responda com s ou n!")
         else:
             break
-    if answer == 's':
+    if answer == "s":
         time.sleep(4)
-        wiki_data = get_wiki_data.data['wikidata']
+        wiki_data = get_wiki_data.data["wikidata"]
 
         # URL do artigo na wikipedia, utilizado para fazer Webscraping diretamente na página
         # do artigo e obter o nome completo, caso não seja possível obter pela wptools, e
         # também para compor o arquivo csv.
         get_rest_base = page.get_restbase()
-        page_url = get_rest_base.data['url']
+        page_url = get_rest_base.data["url"]
 
         # NOME COMPLETO
         # Trecho que utilizo para obter o nome completo da pessoa.
         # Tento pela wptools, caso não consiga, utilizo Webscraping.
         try:
-            full_name = wiki_data['nome de nascimento (P1477)']
+            full_name = wiki_data["nome de nascimento (P1477)"]
             if not alphabet_detector.is_latin(full_name):
                 full_name = webscraping.extract_full_name(page_url)
             if type(full_name) is list:
-                full_name = ','.join(full_name).replace(',', ', ')
+                full_name = ",".join(full_name).replace(",", ", ")
         except KeyError:
             full_name = webscraping.extract_full_name(page_url)
 
@@ -109,14 +110,14 @@ def fetch_data(search_term, is_correct_term):
         # sparql_query_data = sparql_query_wikidata(correct_search_term)
 
         # A partir daqui monto um dicionário com todas as informações que eu preciso e crio um arquivo csv.
-        imagem = sparql_query_data['Imagem']
-        origem = sparql_query_data['País']
-        data_nascimento = sparql_query_data['Data de Nascimento']
-        local_nascimento = sparql_query_data['Local de Nascimento']
-        data_falecimento = sparql_query_data['Data de Falecimento']
-        local_falecimento = sparql_query_data['Local de Falecimento']
-        latitude = sparql_query_data['Latitude']
-        longitude = sparql_query_data['Longitude']
+        imagem = sparql_query_data["Imagem"]
+        origem = sparql_query_data["País"]
+        data_nascimento = sparql_query_data["Data de Nascimento"]
+        local_nascimento = sparql_query_data["Local de Nascimento"]
+        data_falecimento = sparql_query_data["Data de Falecimento"]
+        local_falecimento = sparql_query_data["Local de Falecimento"]
+        latitude = sparql_query_data["Latitude"]
+        longitude = sparql_query_data["Longitude"]
         seculo = calcula_seculo(data_nascimento)
 
         # ano = int(data_nascimento.split()[-1])

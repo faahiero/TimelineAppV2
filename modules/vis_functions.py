@@ -32,7 +32,9 @@ FILE_NAME = ""
 # Função que gera a visualização com as informações salvas no arquivo csv.
 def generate_visualization(browser_history=False):
     timestamp_fname = datetime.now().strftime("%Y%m%d-%H%M%S") + "_"
-    FILE_NAME = "browser_history_person_info.csv" if browser_history else "person_info.csv"
+    FILE_NAME = (
+        "browser_history_person_info.csv" if browser_history else "person_info.csv"
+    )
 
     if not os.path.exists(FILE_NAME):
         print("Arquivo não encontrado")
@@ -41,71 +43,95 @@ def generate_visualization(browser_history=False):
 
     df = pd.read_csv(FILE_NAME)
 
+    # app = dash.Dash(__name__)
     app = dash.Dash(__name__)
-    log = logging.getLogger('werkzeug')
+    log = logging.getLogger("werkzeug")
     log.disabled = True
 
-    app.layout = html.Div([
-        html.H1("Mapa de Pessoas", style=dict(
-            fontFamily='Fira Sans')
-        ),
-
-        html.Div(dropdown_component(df), style=dict(
-            width='100%',
-            verticalAlign="middle",
-            padding="0px 0px 15px 0px",
-            display='inline-block',
-            fontSize=15,
-            fontFamily='Fira Sans',
-            fontWeight='bold',
-            backgroundColor='white',
-            margin='0px 0px 0px 0px',
-        )),
-
-        dl.Map(style={'width': '100%', 'height': '60em', 'margin': "auto", "display": "block"}, center=[0, 0], zoom=2,
-               children=[
-                   dl.TileLayer(),
-                   dl.MeasureControl(position='bottomright', primaryLengthUnit='kilometers', primaryAreaUnit='hectares',
-                                     activeColor='#db4a29', completedColor='#9b2d14'),
-                   dl.LayerGroup(id="map")
-               ]),
-
-        html.Div(range_slide_component(df), style=dict(
-            width='100%',
-            verticalAlign="middle",
-            padding="10px 0px 0px 0px",
-            display='inline-block',
-            textAlign='center',
-            fontSize=20,
-            fontFamily='Fira Sans',
-            fontWeight='bold',
-            color='black',
-            backgroundColor='white',
-            border='1px solid black',
-            borderRadius='5px',
-            margin='10px 0px 0px 0px',
-        )),
-
-        html.Div(
-            style={'textAlign': 'center'},
-            children=[
-                dcc.Graph(
-                    figure=stacked_bar_plot(df),
-                    style={'display': 'inline-block', 'verticalAlign': 'middle', 'margin': '50px 0px 0px 0px'}
-                )
-            ]
-        ),
-
-        html.Div(
-            style={'textAlign': 'center'},
-            children=[
-                dcc.Graph(
-                    figure=scatter_plot_chart(df),
-                    style={'display': 'inline-block', 'verticalAlign': 'middle', 'margin': '70px 0px 0px 0px'}
-                )
-            ]
-        )
-    ])
+    app.layout = html.Div(
+        [
+            html.H1("Mapa de Pessoas", style=dict(fontFamily="Fira Sans")),
+            html.Div(
+                dropdown_component(df),
+                style=dict(
+                    width="100%",
+                    verticalAlign="middle",
+                    padding="0px 0px 15px 0px",
+                    display="inline-block",
+                    fontSize=15,
+                    fontFamily="Fira Sans",
+                    fontWeight="bold",
+                    backgroundColor="white",
+                    margin="0px 0px 0px 0px",
+                ),
+            ),
+            dl.Map(
+                style={
+                    "width": "100%",
+                    "height": "60em",
+                    "margin": "auto",
+                    "display": "block",
+                },
+                center=[0, 0],
+                zoom=2,
+                children=[
+                    dl.TileLayer(),
+                    dl.MeasureControl(
+                        position="bottomright",
+                        primaryLengthUnit="kilometers",
+                        primaryAreaUnit="hectares",
+                        activeColor="#db4a29",
+                        completedColor="#9b2d14",
+                    ),
+                    dl.LayerGroup(id="map"),
+                ],
+            ),
+            html.Div(
+                range_slide_component(df),
+                style=dict(
+                    width="100%",
+                    verticalAlign="middle",
+                    padding="10px 0px 0px 0px",
+                    display="inline-block",
+                    textAlign="center",
+                    fontSize=20,
+                    fontFamily="Fira Sans",
+                    fontWeight="bold",
+                    color="black",
+                    backgroundColor="white",
+                    border="1px solid black",
+                    borderRadius="5px",
+                    margin="10px 0px 0px 0px",
+                ),
+            ),
+            html.Div(
+                style={"textAlign": "center"},
+                children=[
+                    dcc.Graph(
+                        figure=stacked_bar_plot(df),
+                        style={
+                            "display": "inline-block",
+                            "verticalAlign": "middle",
+                            "margin": "50px 0px 0px 0px",
+                        },
+                    )
+                ],
+            ),
+            html.Div(
+                style={"textAlign": "center"},
+                children=[
+                    dcc.Graph(
+                        figure=scatter_plot_chart(df),
+                        style={
+                            "display": "inline-block",
+                            "verticalAlign": "middle",
+                            "margin": "70px 0px 0px 0px",
+                        },
+                    )
+                ],
+            ),
+        ]
+    )
 
     # @app.callback(
     #     Output("map", "children"),
@@ -128,25 +154,32 @@ def generate_visualization(browser_history=False):
         Output("map", "children"),
         [Input("map", "id")],
         Input("seculo-slider", "value"),
-        Input("name-dropdown", "value")
+        Input("name-dropdown", "value"),
     )
     def update_layer(layer_id, seculo, name):
         if name is None or len(name) == 0:
             seculo_min = int(seculo[0])
             seculo_max = int(seculo[1])
-            return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
-                dl.Tooltip(row["Nome Completo"]),
-                popup_html(row)
-            ]) for idx, row in df.iterrows() if seculo_min <= parse_seculo(row["Século"]) <= seculo_max]
+            return [
+                dl.Marker(
+                    position=[row["Latitude"], row["Longitude"]],
+                    children=[dl.Tooltip(row["Nome Completo"]), popup_html(row)],
+                )
+                for idx, row in df.iterrows()
+                if seculo_min <= parse_seculo(row["Século"]) <= seculo_max
+            ]
         else:
             seculo_min = int(seculo[0])
             seculo_max = int(seculo[1])
-            return [dl.Marker(position=[row["Latitude"], row["Longitude"]], children=[
-                dl.Tooltip(row["Nome Completo"]),
-                popup_html(row)
-            ]) for idx, row in df.iterrows() if
-                    row["Nome Completo"] in name and seculo_min <= parse_seculo(row["Século"]) <= seculo_max]
-
+            return [
+                dl.Marker(
+                    position=[row["Latitude"], row["Longitude"]],
+                    children=[dl.Tooltip(row["Nome Completo"]), popup_html(row)],
+                )
+                for idx, row in df.iterrows()
+                if row["Nome Completo"] in name
+                and seculo_min <= parse_seculo(row["Século"]) <= seculo_max
+            ]
 
     def parse_seculo(valor):
         if "a.C." in str(valor):
@@ -160,7 +193,7 @@ def generate_visualization(browser_history=False):
 
     # run server and wait for execution and hide messages
     webbrowser.open("http://127.0.0.1:8050/")
-    app.run(use_reloader=False, debug=True)
+    app.run_server(use_reloader=False, debug=True)
 
 
 def generate_visualization_history():
@@ -233,27 +266,28 @@ def generate_visualization_history():
             longitude = sparql_query_data["Longitude"]
             seculo = calcula_seculo(data_nascimento)
 
-            person_info.append({
-                "Termo Buscado": entry,
-                "Nome Completo": full_name,
-                "Origem/Nacionalidade": origem,
-                "Data de Nascimento": data_nascimento,
-                "Local de Nascimento": local_nascimento,
-                "Data de Falecimento": data_falecimento,
-                "Local de Falecimento": local_falecimento,
-                "Século": seculo,
-                "Latitude": latitude,
-                "Longitude": longitude,
-                "Url": page_url,
-                "Imagem": imagem,
-            })
+            person_info.append(
+                {
+                    "Termo Buscado": entry,
+                    "Nome Completo": full_name,
+                    "Origem/Nacionalidade": origem,
+                    "Data de Nascimento": data_nascimento,
+                    "Local de Nascimento": local_nascimento,
+                    "Data de Falecimento": data_falecimento,
+                    "Local de Falecimento": local_falecimento,
+                    "Século": seculo,
+                    "Latitude": latitude,
+                    "Longitude": longitude,
+                    "Url": page_url,
+                    "Imagem": imagem,
+                }
+            )
 
-    #remove duplicates from person_info
+    # remove duplicates from person_info
     person_info = [dict(t) for t in {tuple(d.items()) for d in person_info}]
     # loop through each dictionary in the list and pass as argument to write_to_csv function
     for person in person_info:
         write_to_csv(person, FILE_NAME)
-
 
     if len(wikipedia_search) == 0:
         print("Nenhum registro de busca na Wikipedia encontrado")
