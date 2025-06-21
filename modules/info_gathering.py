@@ -33,47 +33,73 @@ def fetch_data(search_term, is_correct_term):
     if correct_search_term is None:
         time.sleep(4)
         return
-    print("Termo buscado: " + search_term)
 
-    # Pesquisa o termo, após corrigido, na lib wptools.
-    page = search_wikidata(correct_search_term)
-    get_wiki_data = page.get_wikidata()
+    print(f"Termo buscado: {search_term}")
 
-    # Verifica se a instância da wikidata referente ao termo buscado possui a
-    # propriedade 'Q5', que representa um ser humano, logo entende-se que é uma pessoa.
-    wikidata_labels = get_wiki_data.data["labels"]
-    if "Q5" not in wikidata_labels:
+    page = _get_wikidata_page(correct_search_term)
+    if page is None:
+        return
+
+    if not _is_person(page):
         print("Termo buscado não é uma pessoa. Tente novamente.")
         time.sleep(4)
         return
-        # attempts += 1
-        # if attempts < 3:
-        #     retrieve_information(search_term, False)
-        # else:
-        #     print("Refine sua busca e tente novamente")
-        #     print("Obrigado por usar o software!!")
-        #     sys.exit()
 
     print("Obtendo informações...")
-
-    # Após conseguir o nome completo, começo a utilizar a biblioteca SPARQLWrapper para obter os demais dados.
-    # A biblioteca realiza consultas diretamente na wikidata, e retorna um objeto JSON com as informações.
-    # A função query_wikidata retorna um objeto JSON com as informações necessárias.
     sparql_query_data = sparql_query_wikidata(correct_search_term)
-
     if sparql_query_data is None:
         print("Não foi possível obter informações sobre a personalidade pesquisada.")
         time.sleep(4)
         return
 
-    # Aqui utilizo uma biblioteca auxiliar chamada wikipedia(importada como wiki),
-    # apenas para obter algumas linhas do sumário do artigo encontrado e mostrar
-    # na tela para confirmar a busca.
     summary = get_summary(correct_search_term)
-
     clear_console()
     print(summary)
 
+    if not _confirm_information():
+        _handle_incorrect_information(search_term)
+        return
+
+    person_data = _extract_person_data(page, sparql_query_data, search_term)
+    write_to_csv(person_data, FILE_NAME)
+    _display_person_info(person_data)
+
+    time.sleep(4)
+    clear_console()
+
+
+def _get_wikidata_page(search_term):
+    """Busca o termo na Wikidata e retorna a página."""
+    try:
+        page = search_wikidata(search_term)
+        if page and hasattr(page, 'data') and page.data.get('requests'): # Verifica se houve requisição
+            return page
+        else:
+            print(f"Nenhuma página encontrada ou dados insuficientes para '{search_term}' na Wikidata.")
+            return None
+    except Exception as e:
+        print(f"Erro ao buscar '{search_term}' na Wikidata: {e}")
+        return None
+
+
+def _is_person(page):
+    """Verifica se a página da Wikidata se refere a uma pessoa."""
+    if not page:
+        return False
+    try:
+        get_wiki_data = page.get_wikidata()
+        if not get_wiki_data or not hasattr(get_wiki_data, 'data') or 'labels' not in get_wiki_data.data:
+            print(f"Não foi possível obter dados da Wikidata ou labels para a página.")
+            return False
+        wikidata_labels = get_wiki_data.data["labels"]
+        return "Q5" in wikidata_labels  # Q5 é o item do Wikidata para "ser humano"
+    except Exception as e:
+        print(f"Erro ao verificar se a página é de uma pessoa: {e}")
+        return False
+
+
+def _confirm_information():
+    """Pergunta ao usuário se a informação está correta."""
     while True:
         print()
         user_option = input("A informação está correta? (s/n): ")
@@ -81,87 +107,104 @@ def fetch_data(search_term, is_correct_term):
         if user_option == "" or answer not in ["s", "n"]:
             print("Responda com s ou n!")
         else:
-            break
-    if answer == "s":
-        time.sleep(4)
-        wiki_data = get_wiki_data.data["wikidata"]
+            return answer == "s"
 
-        # URL do artigo na wikipedia, utilizado para fazer Webscraping diretamente na página
-        # do artigo e obter o nome completo, caso não seja possível obter pela wptools, e
-        # também para compor o arquivo csv.
+
+def _handle_incorrect_information(search_term):
+    """Lida com a situação em que o usuário indica que a informação está incorreta."""
+    global attempts
+    clear_console()
+    attempts += 1
+    if attempts <= 3:
+        fetch_data(search_term, False)
+    else:
+        print("Refine sua busca e tente novamente")
+        print("Obrigado por usar o software!!")
+        sys.exit()
+
+
+def _extract_person_data(page, sparql_query_data, search_term):
+    """Extrai os dados da pessoa da página da Wikidata e dos dados SPARQL."""
+    try:
+        get_wiki_data = page.get_wikidata()
+        wiki_data = get_wiki_data.data.get("wikidata", {})
         get_rest_base = page.get_restbase()
-        page_url = get_rest_base.data["url"]
+        page_url = get_rest_base.data.get("url", f"https://pt.wikipedia.org/wiki/{search_term.replace(' ', '_')}")
 
-        # NOME COMPLETO
-        # Trecho que utilizo para obter o nome completo da pessoa.
-        # Tento pela wptools, caso não consiga, utilizo Webscraping.
-        try:
-            full_name = wiki_data["nome de nascimento (P1477)"]
-            if not alphabet_detector.is_latin(full_name):
-                full_name = webscraping.extract_full_name(page_url)
-            if type(full_name) is list:
-                full_name = ",".join(full_name).replace(",", ", ")
-        except KeyError:
-            full_name = webscraping.extract_full_name(page_url)
+        full_name = _get_full_name(wiki_data, page_url, search_term)
 
-        # # Após conseguir o nome completo, começo a utilizar a biblioteca SPARQLWrapper para obter os demais dados.
-        # # A biblioteca realiza consultas diretamente na wikidata, e retorna um objeto JSON com as informações.
-        # # A função query_wikidata retorna um objeto JSON com as informações necessárias.
-        # sparql_query_data = sparql_query_wikidata(correct_search_term)
+        data_nascimento = sparql_query_data.get("Data de Nascimento", "Não Informado")
+        seculo = calcula_seculo(data_nascimento) if data_nascimento != "Não Informado" else "Não Informado"
 
-        # A partir daqui monto um dicionário com todas as informações que eu preciso e crio um arquivo csv.
-        imagem = sparql_query_data["Imagem"]
-        origem = sparql_query_data["País"]
-        data_nascimento = sparql_query_data["Data de Nascimento"]
-        local_nascimento = sparql_query_data["Local de Nascimento"]
-        data_falecimento = sparql_query_data["Data de Falecimento"]
-        local_falecimento = sparql_query_data["Local de Falecimento"]
-        latitude = sparql_query_data["Latitude"]
-        longitude = sparql_query_data["Longitude"]
-        seculo = calcula_seculo(data_nascimento)
-
-        # ano = int(data_nascimento.split()[-1])
-        # if ano % 100 == 0:
-        #     ano -= 1
-        # seculo = (ano // 100) + 1
-
-        person_info = {
+        return {
             "Termo Buscado": search_term,
             "Nome Completo": full_name,
-            "Origem/Nacionalidade": origem,
+            "Origem/Nacionalidade": sparql_query_data.get("País", "Não Informado"),
             "Data de Nascimento": data_nascimento,
-            "Local de Nascimento": local_nascimento,
-            "Data de Falecimento": data_falecimento,
-            "Local de Falecimento": local_falecimento,
+            "Local de Nascimento": sparql_query_data.get("Local de Nascimento", "Não Informado"),
+            "Data de Falecimento": sparql_query_data.get("Data de Falecimento", "Não Informado"),
+            "Local de Falecimento": sparql_query_data.get("Local de Falecimento", "Não Informado"),
             "Século": seculo,
-            "Latitude": latitude,
-            "Longitude": longitude,
+            "Latitude": sparql_query_data.get("Latitude", "Não Informado"),
+            "Longitude": sparql_query_data.get("Longitude", "Não Informado"),
             "Url": page_url,
-            "Imagem": imagem,
+            "Imagem": sparql_query_data.get("Imagem", "Não Informado"),
+        }
+    except Exception as e:
+        print(f"Erro ao extrair dados da pessoa para '{search_term}': {e}")
+        # Retorna um dicionário com valores padrão em caso de erro, para manter a estrutura
+        return {
+            "Termo Buscado": search_term,
+            "Nome Completo": search_term, # Fallback para o termo de busca
+            "Origem/Nacionalidade": "Não Informado",
+            "Data de Nascimento": "Não Informado",
+            "Local de Nascimento": "Não Informado",
+            "Data de Falecimento": "Não Informado",
+            "Local de Falecimento": "Não Informado",
+            "Século": "Não Informado",
+            "Latitude": "Não Informado",
+            "Longitude": "Não Informado",
+            "Url": f"https://pt.wikipedia.org/wiki/{search_term.replace(' ', '_')}",
+            "Imagem": "Não Informado",
         }
 
-        write_to_csv(person_info, FILE_NAME)
 
-        clear_console()
-        print()
-        print("Nome Completo: " + full_name)
-        if origem != "Não Informado":
-            print("Origem/Nacionalidade: " + origem)
-        print("Data de Nascimento: " + data_nascimento)
-        print("Local de Nascimento: " + local_nascimento)
-        print("Data de Falecimento: " + data_falecimento)
-        print("Local de Falecimento: " + local_falecimento)
-        print("Século: " + str(seculo))
-        print("Finalizando...")
+def _get_full_name(wiki_data, page_url, search_term):
+    """Obtém o nome completo da pessoa, com fallbacks."""
+    full_name = None
+    try:
+        # Tenta obter o nome de nascimento (P1477)
+        full_name = wiki_data.get("nome de nascimento (P1477)")
+        if isinstance(full_name, list):
+            full_name = ", ".join(full_name) # Concatena se for uma lista
 
-        time.sleep(4)
-        clear_console()
-    else:
-        clear_console()
-        attempts += 1
-        if attempts <= 3:
-            fetch_data(search_term, False)
-        else:
-            print("Refine sua busca e tente novamente")
-            print("Obrigado por usar o software!!")
-            sys.exit()
+        # Se o nome não for latino ou não for encontrado, tenta extrair da URL da página
+        if not full_name or (full_name and not alphabet_detector.is_latin(str(full_name))):
+            if page_url:
+                extracted_name = webscraping.extract_full_name(page_url)
+                if extracted_name: # Usa o nome extraído se a extração for bem-sucedida
+                    full_name = extracted_name
+    except Exception as e:
+        print(f"Erro ao obter nome completo para '{search_term}': {e}")
+        # Não define full_name aqui para que o fallback abaixo seja usado
+
+    # Fallback final para o termo de busca se nenhum nome foi encontrado
+    if not full_name:
+        full_name = search_term
+
+    return full_name
+
+
+def _display_person_info(person_data):
+    """Exibe as informações da pessoa no console."""
+    clear_console()
+    print()
+    print(f"Nome Completo: {person_data['Nome Completo']}")
+    if person_data["Origem/Nacionalidade"] != "Não Informado":
+        print(f"Origem/Nacionalidade: {person_data['Origem/Nacionalidade']}")
+    print(f"Data de Nascimento: {person_data['Data de Nascimento']}")
+    print(f"Local de Nascimento: {person_data['Local de Nascimento']}")
+    print(f"Data de Falecimento: {person_data['Data de Falecimento']}")
+    print(f"Local de Falecimento: {person_data['Local de Falecimento']}")
+    print(f"Século: {person_data['Século']}")
+    print("Finalizando...")

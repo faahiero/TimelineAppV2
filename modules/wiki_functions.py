@@ -1,136 +1,186 @@
-import locale
 import wptools
-import wikipedia as wiki
-from datetime import datetime
+import wikipedia
 from SPARQLWrapper import SPARQLWrapper, JSON
-from urllib.parse import unquote
+import time
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry # Corrigido o import do Retry
 
-wiki.set_lang('pt')
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+# Configurações globais para SPARQLWrapper e requests
+SPARQL_USER_AGENT = "GeoHistWikipediaApp/1.0 (https://github.com/CainaDRP/GeoHist-Wikipedia; cainademorais@gmail.com)"
+WIKIPEDIA_API_USER_AGENT = {"User-Agent": SPARQL_USER_AGENT}
+WIKIPEDIA_LANG = "pt"
 
-WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
+# Cache simples em memória para evitar buscas repetidas na mesma sessão
+_wikidata_cache = {}
+_summary_cache = {}
+_sparql_cache = {}
+
+def _requests_session_with_retries(retries=3, backoff_factor=0.5, status_forcelist=(500, 502, 503, 504)):
+    """Cria uma sessão de requests com retentativas configuradas."""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+        allowed_methods=["HEAD", "GET", "POST"], # Adicionado POST para SPARQLWrapper se necessário
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    session.headers.update(WIKIPEDIA_API_USER_AGENT)
+    return session
+
+# Sessão global para ser usada por wptools e outras chamadas HTTP diretas, se aplicável.
+global_session = _requests_session_with_retries()
+
+# Configura a biblioteca wikipedia para usar o User-Agent globalmente.
+# A lib wikipedia não suporta passar uma sessão diretamente para suas funções principais.
+wikipedia.set_lang(WIKIPEDIA_LANG)
+wikipedia.set_user_agent(SPARQL_USER_AGENT)
 
 
-# Função que utiliza a biblioteca SPARQLWrapper para fazer a consulta no wikidata. Ao final da execução,
-# ela monta um objeto, retornado para a função get_info_person sendo utilizado gerar um arquivo csv.
-def sparql_query_wikidata(term_to_query):
-    endpoint_url = WIKIDATA_SPARQL_ENDPOINT
+def search_wikidata(search_term):
+    """Busca um termo na Wikidata usando wptools, com cache e sessão global de requests."""
+    if search_term in _wikidata_cache:
+        return _wikidata_cache[search_term]
 
-    query = """
-    SELECT ?item ?itemLabel ?imagem ?dataNascimento ?localNascimento ?localNascimentoLabel ?dataFalecimento ?localFalecimento 
-           ?localFalecimentoLabel ?pais ?paisLabel ?geo
-      WHERE {{
-        ?item wdt:P31 wd:Q5 .
-        ?item ?label "{term_to_query}"@pt .
-        ?item wdt:P569 ?dataNascimento .
-        ?item wdt:P19 ?localNascimento .
-        ?localNascimento wdt:P17 ?pais .
-        ?localNascimento wdt:P625 ?geo .
-        OPTIONAL {{ ?item wdt:P18 ?imagem . }}
-        OPTIONAL {{ ?item wdt:P570 ?dataFalecimento . }}
-        OPTIONAL {{ ?item wdt:P20 ?localFalecimento . }}
-        SERVICE wikibase:label {{ bd:serviceParam wikibase:language "pt,en" }}
-    }} ORDER BY DESC(?item) LIMIT 1
-
-    """.format(term_to_query=term_to_query)
-    user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 " \
-                 "Safari/537.36 "
-
-    sparql = SPARQLWrapper(endpoint_url, agent=user_agent)
-    sparql.setQuery(query)
-    sparql.setReturnFormat(JSON)
-    query_results = sparql.query().convert()['results']['bindings']
-
-    if not query_results:
+    try:
+        # wptools pode usar a sessão passada para `page.get_query()`, mas não para `page.get_wikidata()` diretamente.
+        # O User-Agent configurado na sessão global deve ser usado por wptools se ele usar `requests.get` ou `session.get`.
+        page = wptools.page(search_term, lang=WIKIPEDIA_LANG, silent=True, verbose=False, session=global_session)
+        page.get_wikidata() # Esta chamada faz a requisição principal.
+        _wikidata_cache[search_term] = page
+        return page
+    except LookupError:
+        # print(f"Termo '{search_term}' não encontrado na Wikipedia em português via wptools.")
+        _wikidata_cache[search_term] = None
+        return None
+    except requests.exceptions.RequestException as e: # Captura erros de request
+        print(f"Erro de rede ao buscar '{search_term}' com wptools: {e}")
+        _wikidata_cache[search_term] = None
+        return None
+    except Exception as e: # Outras exceções
+        print(f"Erro inesperado ao buscar '{search_term}' com wptools: {e}")
+        _wikidata_cache[search_term] = None
         return None
 
-    # check if have imagem property in query
-    if 'imagem' in query_results[0]:
-        imagem = (query_results[0]["imagem"]["value"])
-    else:
-        imagem = 'Sem Imagem'
+def get_summary(search_term, sentences=5):
+    """Obtém um resumo do artigo da Wikipedia, com cache."""
+    cache_key = (search_term, sentences)
+    if cache_key in _summary_cache:
+        return _summary_cache[cache_key]
 
-    pais = (query_results[0]["paisLabel"]["value"])
-    data_nascimento = (query_results[0]["dataNascimento"]["value"])
-    if data_nascimento[0] == '-':
-        ano_ac = data_nascimento[1:5]
-        # Converte o ano antes de Cristo para inteiro e adiciona " a.C."
-        ano_ac = int(ano_ac)
-        ano_formatado = "{} a.C.".format(ano_ac)
-        data_nascimento = ano_formatado
-        # data_nascimento = data_nascimento[1:]
-    else:
-        data_nascimento = datetime.strptime(data_nascimento, '%Y-%m-%dT%H:%M:%SZ')
-        data_nascimento = data_nascimento.strftime('%d de %B de %Y')
+    try:
+        summary = wikipedia.summary(search_term, sentences=sentences)
+        _summary_cache[cache_key] = summary
+        return summary
+    except wikipedia.exceptions.PageError:
+        _summary_cache[cache_key] = "Resumo não disponível (página não encontrada)."
+        return _summary_cache[cache_key]
+    except wikipedia.exceptions.DisambiguationError as e:
+        summary_text = f"Termo ambíguo. Opções: {', '.join(e.options[:3])}..." if e.options else "Termo ambíguo, resumo não disponível."
+        _summary_cache[cache_key] = summary_text
+        return summary_text
+    except requests.exceptions.RequestException as e:
+        print(f"Erro de rede ao obter resumo para '{search_term}': {e}")
+        _summary_cache[cache_key] = "Resumo não disponível (erro de rede)."
+        return _summary_cache[cache_key]
+    except Exception as e:
+        print(f"Erro inesperado ao obter resumo para '{search_term}': {e}")
+        _summary_cache[cache_key] = "Resumo não disponível (erro inesperado)."
+        return _summary_cache[cache_key]
 
-    if 'dataFalecimento' in query_results[0]:
-        data_falecimento = query_results[0]["dataFalecimento"]["value"]
-        if data_falecimento[0] == '-':
-            ano_ac = data_falecimento[1:5]
-            # Converte o ano antes de Cristo para inteiro e adiciona " a.C."
-            ano_ac = int(ano_ac)
-            ano_formatado = "{} a.C.".format(ano_ac)
-            data_falecimento = ano_formatado
-        else:
-            try:
-                data_falecimento = datetime.strptime(data_falecimento, '%Y-%m-%dT%H:%M:%SZ')
-                data_falecimento = data_falecimento.strftime('%d de %B de %Y')
-            except ValueError:
-                # A data_falecimento não está no formato esperado
-                data_falecimento = '-'
-    else:
-        data_falecimento = '-'
 
-    local_nascimento = (query_results[0]["localNascimentoLabel"]["value"])
+def sparql_query_wikidata(person_name, retries=2, delay_base=1, timeout=15):
+    """Realiza uma consulta SPARQL na Wikidata, com cache, retentativas exponenciais e timeout."""
+    if person_name in _sparql_cache:
+        return _sparql_cache[person_name]
 
-    if 'localFalecimento' in query_results[0]:
-        local_falecimento = (
-            query_results[0]["localFalecimentoLabel"]["value"])
-    else:
-        local_falecimento = '-'
+    sparql = SPARQLWrapper("https://query.wikidata.org/sparql", agent=SPARQL_USER_AGENT)
+    sparql.setTimeout(timeout)
+    sparql.setReturnFormat(JSON)
+    sparql.setMethod('POST') # POST é geralmente mais robusto para queries SPARQL
 
-    coordinates = (query_results[0]["geo"]["value"])
-    coordinates = coordinates[6:-1]
-    coordinates = coordinates.split(' ')
-    coordinates.reverse()
-    coordinates = ', '.join(coordinates)
-
-    latitude = coordinates.split(',')[0]
-    longitude = coordinates.split(',')[1]
-
-    query_results = {
-        'Imagem': imagem,
-        'País': pais,
-        'Data de Nascimento': data_nascimento,
-        'Local de Nascimento': local_nascimento,
-        'Data de Falecimento': data_falecimento,
-        'Local de Falecimento': local_falecimento,
-        'Latitude': latitude,
-        'Longitude': longitude
+    query = """
+    SELECT ?personLabel ?birthDate ?birthPlaceLabel ?deathDate ?deathPlaceLabel ?countryLabel ?image ?coord WHERE {
+      ?person rdfs:label "%s"@pt. # Busca pelo nome em português
+      ?person wdt:P31 wd:Q5. # Garante que é uma instância de ser humano (Q5)
+      OPTIONAL { ?person wdt:P569 ?birthDate. } # Data de nascimento
+      OPTIONAL {
+          ?person wdt:P19 ?birthPlace. # Local de nascimento (entidade)
+          OPTIONAL {?birthPlace rdfs:label ?birthPlaceLabel. FILTER(LANG(?birthPlaceLabel) = "pt") } # Label em PT
+      }
+      OPTIONAL { ?person wdt:P570 ?deathDate. } # Data de falecimento
+      OPTIONAL {
+          ?person wdt:P20 ?deathPlace. # Local de falecimento (entidade)
+          OPTIONAL {?deathPlace rdfs:label ?deathPlaceLabel. FILTER(LANG(?deathPlaceLabel) = "pt") }
+      }
+      OPTIONAL {
+          ?person wdt:P27 ?country. # País de cidadania (entidade)
+          OPTIONAL {?country rdfs:label ?countryLabel. FILTER(LANG(?countryLabel) = "pt") }
+      }
+      OPTIONAL { ?person wdt:P18 ?image. } # Imagem
+      OPTIONAL { ?birthPlace wdt:P625 ?coord. } # Coordenadas do local de nascimento
+      # SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,[AUTO_LANGUAGE],en". } # Para obter labels automaticamente (já está implícito com rdfs:label)
     }
+    LIMIT 1
+    """ % person_name.replace('"', '\\"') # Escapa aspas no nome para a query
 
-    return query_results
+    for attempt in range(retries):
+        try:
+            results = sparql.queryAndConvert()
+            if results["results"]["bindings"]:
+                binding = results["results"]["bindings"][0]
 
+                # Função auxiliar para obter valor ou "Não Informado", tratando ausência de 'value'
+                def get_value(data_dict, key, default="Não Informado"):
+                    if key in data_dict and data_dict[key]["value"]:
+                        return data_dict[key]["value"]
+                    return default
 
-# Função que utiliza wptools para fazer uma busca na wikidata por um termo.
-# Ela retorna uma instância na wikidata do item buscado caso ele exista,
-# e com essa informação extraio a propriedade "nome de nascimento (P1477)"
-# em funções mais abaixo. Caso não haja registro dessa propriedade, utilizo 
-# Webscraping tradicional (BeautifulSoup, etc.) para obter o dado.
-def search_wikidata(search_term):
-    return wptools.page(search_term, lang='pt', silent=True, verbose=False)
+                data_nascimento = get_value(binding, "birthDate").split("T")[0] if get_value(binding, "birthDate") != "Não Informado" else "Não Informado"
+                local_nascimento = get_value(binding, "birthPlaceLabel", get_value(binding, "birthPlace", "Não Informado"))
+                data_falecimento = get_value(binding, "deathDate").split("T")[0] if get_value(binding, "deathDate") != "Não Informado" else "Não Informado"
+                local_falecimento = get_value(binding, "deathPlaceLabel", get_value(binding, "deathPlace", "Não Informado"))
+                pais_origem = get_value(binding, "countryLabel", get_value(binding, "country", "Não Informado"))
+                imagem_url = get_value(binding, "image")
 
+                latitude, longitude = "Não Informado", "Não Informado"
+                coord_val = get_value(binding, "coord")
+                if coord_val != "Não Informado":
+                    try:
+                        # Formato "Point(Longitude Latitude)"
+                        lon_lat_str = coord_val.replace("Point(", "").replace(")", "").split()
+                        if len(lon_lat_str) == 2:
+                            longitude = lon_lat_str[0]
+                            latitude = lon_lat_str[1]
+                    except Exception:
+                        print(f"Formato de coordenadas inesperado para {person_name}: {coord_val}")
 
-# Aqui utilizo uma biblioteca auxiliar chamada wikipedia(importada como wiki),
-# apenas para obter algumas linhas do sumário do artigo encontrado e mostrar
-# na tela para confirmar a busca.
-def get_summary(correct_search_term, sentences=2):
-    return wiki.summary(correct_search_term, sentences=sentences)
-
-
-def get_wikipedia_history(histories):
-    wikipedia_history = []
-    for dt, url in histories:
-        if "wikipedia.org/wiki" in url:
-            wikipedia_history.append(unquote(url.split("/")[-1]).replace("_", " "))
-    return wikipedia_history
+                result_data = {
+                    "Nome": person_name, "Data de Nascimento": data_nascimento,
+                    "Local de Nascimento": local_nascimento, "Data de Falecimento": data_falecimento,
+                    "Local de Falecimento": local_falecimento, "País": pais_origem,
+                    "Imagem": imagem_url, "Latitude": latitude, "Longitude": longitude
+                }
+                _sparql_cache[person_name] = result_data
+                return result_data
+            else:
+                # print(f"SPARQL: Nenhum resultado para {person_name} na tentativa {attempt + 1}.")
+                _sparql_cache[person_name] = None
+                return None # Retorna None se não encontrar resultados para evitar mais tentativas desnecessárias
+        except Exception as e: # Captura erros de rede, timeout, JSON parsing, etc.
+            print(f"Erro na consulta SPARQL para '{person_name}' (tentativa {attempt + 1}/{retries}): {type(e).__name__} - {e}")
+            if attempt < retries - 1:
+                current_delay = delay_base * (2 ** attempt) # Backoff exponencial
+                # print(f"Aguardando {current_delay}s antes da próxima tentativa...")
+                time.sleep(current_delay)
+            else:
+                print(f"Falha final ao obter dados SPARQL para '{person_name}' após {retries} tentativas.")
+                _sparql_cache[person_name] = None # Cacheia a falha
+                return None
+    _sparql_cache[person_name] = None # Caso o loop termine sem sucesso (improvável com retries>0)
+    return None
