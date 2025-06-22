@@ -16,12 +16,42 @@ if not os.path.exists(SESSIONS_DIR):
 
 def handle_fetch_data():
     """Lida com a busca de dados de uma nova personalidade."""
-    search_term = input("Digite o nome da personalidade (ou 0 para voltar ao menu): ")
-    if search_term == "0":
-        return
-    # O arquivo person_info.csv será criado/atualizado por fetch_data
-    fetch_data(search_term, is_correct_term=False)
-    input("\nDados buscados. Pressione Enter para continuar...")
+    MAX_ATTEMPTS = 3
+    attempts = 0
+
+    while attempts < MAX_ATTEMPTS:
+        search_term = input("Digite o nome da personalidade (ou 0 para voltar ao menu): ").strip()
+        if search_term == "0":
+            return # Volta ao menu principal
+
+        if not search_term:
+            print("O nome da personalidade não pode ser vazio. Tente novamente.")
+            attempts += 1
+            if attempts >= MAX_ATTEMPTS:
+                print("Número máximo de tentativas atingido.")
+            input("Pressione Enter para tentar novamente ou digite 0 no próximo prompt para voltar.")
+            clear_console() # Limpa para a próxima tentativa de input ou para o menu
+            continue # Pede o input novamente
+
+        # Chama fetch_data. A função fetch_data agora não pede input e não lida com 'is_correct_term'.
+        # Ela processa o termo e retorna. A lógica de "dados corretos?" está dentro de fetch_data,
+        # mas não resulta em novas chamadas recursivas a fetch_data de dentro dela mesma.
+        fetch_data(search_term)
+
+        # Após fetch_data terminar (seja sucesso ou falha parcial com mensagem),
+        # perguntamos ao usuário se quer tentar uma nova busca ou voltar.
+        # A pausa para "Pressione Enter para continuar..." é feita após esta interação.
+
+        # A lógica de "tentar novamente o mesmo termo" ou "refinar busca" que existia
+        # com _handle_incorrect_information foi simplificada. Agora, se a busca não for
+        # satisfatória (usuário responde 'n' para confirmação em fetch_data), fetch_data retorna
+        # e o usuário pode simplesmente iniciar uma nova busca pelo menu.
+        # Se quisermos uma lógica de "tentar novamente este termo" ou "digitar novo termo" aqui,
+        # precisaríamos de um loop mais complexo ou de fetch_data retornar um status.
+        # Por ora, simplificamos: uma chamada a handle_fetch_data é uma tentativa de busca.
+        break # Sai do loop de tentativas de input se um search_term válido foi processado.
+
+    input("\nPressione Enter para voltar ao menu...")
 
 def handle_generate_visualization(session_file=None):
     """Lida com a geração de visualização, opcionalmente a partir de um arquivo de sessão."""
