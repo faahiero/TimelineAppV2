@@ -48,6 +48,7 @@ def display_menu():
     
     load_status = f"{VERDE}✓{NORMAL}" if sessions_exist else f"{CINZA}✗{NORMAL}"
     print(f"[5] - Carregar sessão (visualizar ou adicionar buscas) {load_status}")
+    print(f"[7] - Remover sessões salvas {load_status}")
     
     print(f"\n{VERDE}🔧 FERRAMENTAS{NORMAL}")
     fix_coords_status = f"{VERDE}✓{NORMAL}" if person_csv_exists else f"{CINZA}✗{NORMAL}"
@@ -225,8 +226,89 @@ def manage_sessions(sessions_dir, action):
             print("❌ Entrada inválida")
             return None
     
+    elif action == "remove":
+        # Remover sessões salvas
+        if not os.path.exists(sessions_dir):
+            print("❌ Nenhuma sessão encontrada para remover")
+            return None
+        
+        session_files = [f for f in os.listdir(sessions_dir) if f.endswith('.csv')]
+        
+        if not session_files:
+            print("❌ Nenhuma sessão encontrada para remover")
+            return None
+        
+        print(f"\n🗑️  Sessões disponíveis para remoção:")
+        for i, session_file in enumerate(session_files, 1):
+            try:
+                import pandas as pd
+                session_path = os.path.join(sessions_dir, session_file)
+                df = pd.read_csv(session_path)
+                count = len(df)
+                unique_people = df['Nome Completo'].nunique()
+                countries = df['Origem/Nacionalidade'].nunique()
+                print(f"[{i}] {session_file}")
+                print(f"    📊 {unique_people} personalidade(s), {countries} país(es)")
+            except:
+                print(f"[{i}] {session_file}")
+        
+        print(f"[{len(session_files) + 1}] Remover TODAS as sessões")
+        print("[0] Cancelar")
+        
+        try:
+            choice = input("\nEscolha uma opção: ").strip()
+            
+            if choice == "0":
+                print("❌ Operação cancelada")
+                return None
+            elif choice == str(len(session_files) + 1):
+                # Remover todas as sessões
+                confirm = input("⚠️  Tem certeza que deseja remover TODAS as sessões? (digite 'CONFIRMAR'): ")
+                if confirm == "CONFIRMAR":
+                    removed_count = 0
+                    for session_file in session_files:
+                        try:
+                            session_path = os.path.join(sessions_dir, session_file)
+                            os.remove(session_path)
+                            removed_count += 1
+                        except Exception as e:
+                            print(f"❌ Erro ao remover {session_file}: {e}")
+                    
+                    print(f"✅ {removed_count} sessão(ões) removida(s)")
+                    return {"removed": removed_count, "type": "all"}
+                else:
+                    print("❌ Operação cancelada - confirmação incorreta")
+                    return None
+            else:
+                # Remover sessão específica
+                try:
+                    session_index = int(choice) - 1
+                    if 0 <= session_index < len(session_files):
+                        selected_session = session_files[session_index]
+                        session_path = os.path.join(sessions_dir, selected_session)
+                        
+                        confirm = input(f"⚠️  Tem certeza que deseja remover '{selected_session}'? (s/n): ")
+                        if confirm.lower() == 's':
+                            try:
+                                os.remove(session_path)
+                                print(f"✅ Sessão '{selected_session}' removida com sucesso")
+                                return {"removed": 1, "type": "single", "file": selected_session}
+                            except Exception as e:
+                                print(f"❌ Erro ao remover sessão: {e}")
+                                return None
+                        else:
+                            print("❌ Operação cancelada")
+                            return None
+                    else:
+                        print("❌ Opção inválida")
+                        return None
+                except ValueError:
+                    print("❌ Entrada inválida")
+                    return None
+        except KeyboardInterrupt:
+            print("\n❌ Operação cancelada pelo usuário")
+            return None
 
-    
     return None
 
 def get_current_session_info():

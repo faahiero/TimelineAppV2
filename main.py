@@ -88,6 +88,16 @@ while True:
         
         print("\n✅ Correção de coordenadas concluída!")
         time.sleep(3)
+    elif options == "7":
+        clear_console()
+        print("🗑️  Gerenciamento de Remoção de Sessões")
+        result = manage_sessions(SESSIONS_DIR, "remove")
+        if result:
+            if result["type"] == "all":
+                print(f"🎉 Todas as {result['removed']} sessões foram removidas!")
+            elif result["type"] == "single":
+                print(f"🎉 Sessão '{result['file']}' removida com sucesso!")
+        time.sleep(3)
     elif options == "0":
         clear_console()
         print("Saindo...")
