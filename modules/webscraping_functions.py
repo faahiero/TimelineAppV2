@@ -18,7 +18,12 @@ def get_correct_search_term(search_term):
         + "w/index.php?search={}&title=Especial:Pesquisar&profile=advanced&"
         "fulltext=1&ns0=1".format(encoded_search_term)
     )
-    page = requests.get(wikipedia_search_url)
+    
+    # Adicionar User-Agent para evitar bloqueio da Wikipedia
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    page = requests.get(wikipedia_search_url, headers=headers)
     soup = BeautifulSoup(page.content, "html.parser")
 
     # correção palavra errada (você quis dizer)
@@ -26,7 +31,7 @@ def get_correct_search_term(search_term):
         for data in soup.find_all("div", class_="searchdidyoumean"):
             for a in data.find_all("a"):
                 link = a.get("href")
-                corrected_search = requests.get(base_wikipedia_url + link)
+                corrected_search = requests.get(base_wikipedia_url + link, headers=headers)
                 soup_correct_search = BeautifulSoup(
                     corrected_search.content, "html.parser"
                 )
@@ -54,7 +59,10 @@ def get_correct_search_term(search_term):
 # Função para obter o nome completo, caso não consiga utilizar a wptools.
 def extract_full_name(page_url):
     global full_name
-    request_page = requests.get(page_url)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    request_page = requests.get(page_url, headers=headers)
     soup = BeautifulSoup(request_page.text, "html.parser")
 
     for table in soup.find_all("table"):
