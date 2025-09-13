@@ -40,12 +40,21 @@ while True:
         manage_sessions(SESSIONS_DIR, "save")
         time.sleep(2)
     elif options == "5":
-        session_file = manage_sessions(SESSIONS_DIR, "load")
-        if session_file:
+        session_result = manage_sessions(SESSIONS_DIR, "load")
+        if session_result:
             clear_console()
-            print(f"Carregando sessão: {session_file}")
-            session_path = os.path.join(SESSIONS_DIR, session_file)
-            generate_visualization(custom_file_path=session_path)
+            if session_result["type"] == "view":
+                # Apenas visualizar a sessão
+                print(f"📊 Gerando visualização da sessão: {session_result['file']}")
+                generate_visualization(custom_file_path=session_result["path"])
+            elif session_result["type"] == "work":
+                # Sessão carregada para trabalho
+                print(f"📂 Sessão '{session_result['file']}' carregada para trabalho")
+                print("💡 Agora você pode:")
+                print("   • Usar opção [1] para adicionar novas personalidades")
+                print("   • Usar opção [2] para gerar visualização")
+                print("   • Usar opção [4] para salvar a sessão atualizada")
+        time.sleep(3)
     elif options == "6":
         clear_console()
         print("🔧 Corrigindo coordenadas ausentes...")
@@ -57,13 +66,6 @@ while True:
         add_default_coordinates_by_country()
         
         print("\n✅ Correção de coordenadas concluída!")
-        time.sleep(3)
-    elif options == "7":
-        session_file = manage_sessions(SESSIONS_DIR, "load_incremental")
-        if session_file:
-            print(f"📂 Sessão '{session_file}' carregada com sucesso!")
-            print("🔍 Agora você pode fazer novas buscas usando a opção [1]")
-            print("💾 As novas personalidades serão adicionadas à sessão atual")
         time.sleep(3)
     elif options == "0":
         clear_console()

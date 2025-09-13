@@ -1,25 +1,22 @@
-# 📂 Sessões Incrementais - Guia de Uso
+# 📂 Sessões Unificadas - Guia de Uso
 
 ## 🎯 Funcionalidade
 
-A funcionalidade de **Sessões Incrementais** permite carregar uma sessão salva e continuar adicionando novas personalidades a ela, criando coleções temáticas ou expandindo pesquisas existentes.
+A funcionalidade de **Sessões Unificadas** permite carregar uma sessão salva e escolher entre visualizá-la ou trabalhar com ela (adicionando novas personalidades), oferecendo máxima flexibilidade no gerenciamento de coleções.
 
 ## 🔄 Como Funciona
 
-### Fluxo Tradicional (antes):
-1. Fazer buscas → Gerar visualização → Dados movidos para `data/`
-2. Novas buscas começam do zero
-
-### Fluxo Incremental (novo):
+### Fluxo Unificado:
 1. Fazer buscas iniciais → Salvar como sessão
-2. **Carregar sessão incremental** → Adicionar novas buscas → Visualizar tudo junto
+2. **Carregar sessão** → Escolher modo:
+   - **Visualização**: Apenas gerar gráficos (não modifica)
+   - **Trabalho**: Adicionar novas buscas e expandir a coleção
 3. Salvar sessão atualizada quando desejar
 
 ## 📋 Opções do Menu
 
 - **[4]** - Salvar dados da busca atual como sessão
-- **[5]** - Carregar sessão e gerar visualização (somente leitura)
-- **[7]** - **Carregar sessão para adicionar novas buscas** ⭐ (NOVO)
+- **[5]** - **Carregar sessão (visualizar ou adicionar buscas)** ⭐ (UNIFICADO)
 
 ## 🚀 Exemplo Prático
 
@@ -32,13 +29,21 @@ A funcionalidade de **Sessões Incrementais** permite carregar uma sessão salva
    [4] Salvar como sessão: "escritores_brasileiros"
    ```
 
-2. **Expandindo a sessão:**
+2. **Trabalhando com a sessão:**
    ```
-   [7] Carregar sessão incremental: "escritores_brasileiros"
+   [5] Carregar sessão: "escritores_brasileiros"
+   → Escolher: [1] Carregar para trabalho
    [1] Buscar: "Carlos Drummond de Andrade"
    [1] Buscar: "Cecília Meireles"
    [2] Gerar visualização (agora com 4 escritores)
    [4] Salvar sessão atualizada
+   ```
+
+3. **Apenas visualizando:**
+   ```
+   [5] Carregar sessão: "escritores_brasileiros"
+   → Escolher: [2] Apenas visualizar
+   (Gera visualização sem modificar a sessão original)
    ```
 
 ## 📊 Status da Sessão
@@ -79,7 +84,8 @@ O menu agora mostra informações detalhadas da sessão ativa:
 
 ## 🔧 Implementação Técnica
 
-- **Função**: `manage_sessions(sessions_dir, "load_incremental")`
+- **Função**: `manage_sessions(sessions_dir, "load")` com escolha de modo
 - **Arquivo**: `modules/utils.py`
 - **Status**: `get_current_session_info()` e `show_session_status()`
-- **Menu**: Opção [7] adicionada ao fluxo principal
+- **Menu**: Opção [5] unificada substituindo [5] e [7] anteriores
+- **Retorno**: Dicionário com `{"type": "work|view", "file": nome, "path": caminho}`

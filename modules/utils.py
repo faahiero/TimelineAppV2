@@ -47,8 +47,7 @@ def display_menu():
     print(f"[4] - Salvar dados da busca atual como sessão {save_status}")
     
     load_status = f"{VERDE}✓{NORMAL}" if sessions_exist else f"{CINZA}✗{NORMAL}"
-    print(f"[5] - Carregar sessão e gerar visualização {load_status}")
-    print(f"[7] - Carregar sessão para adicionar novas buscas {load_status}")
+    print(f"[5] - Carregar sessão (visualizar ou adicionar buscas) {load_status}")
     
     print(f"\n{VERDE}🔧 FERRAMENTAS{NORMAL}")
     fix_coords_status = f"{VERDE}✓{NORMAL}" if person_csv_exists else f"{CINZA}✗{NORMAL}"
@@ -159,7 +158,7 @@ def manage_sessions(sessions_dir, action):
             return None
     
     elif action == "load":
-        # Carregar sessão
+        # Carregar sessão unificada
         if not os.path.exists(sessions_dir):
             print("❌ Nenhuma sessão encontrada")
             return None
@@ -172,20 +171,53 @@ def manage_sessions(sessions_dir, action):
         
         print(f"\n📋 Sessões disponíveis:")
         for i, session_file in enumerate(session_files, 1):
-            # Extrai informações do arquivo
             try:
                 import pandas as pd
                 session_path = os.path.join(sessions_dir, session_file)
                 df = pd.read_csv(session_path)
                 count = len(df)
-                print(f"[{i}] {session_file} ({count} personalidade{'s' if count != 1 else ''})")
+                unique_people = df['Nome Completo'].nunique()
+                countries = df['Origem/Nacionalidade'].nunique()
+                print(f"[{i}] {session_file}")
+                print(f"    📊 {unique_people} personalidade(s), {countries} país(es)")
             except:
                 print(f"[{i}] {session_file}")
         
         try:
             choice = int(input("\nEscolha uma sessão (número): ")) - 1
             if 0 <= choice < len(session_files):
-                return session_files[choice]
+                selected_session = session_files[choice]
+                session_path = os.path.join(sessions_dir, selected_session)
+                
+                # Pergunta o que fazer com a sessão
+                print(f"\n📂 Sessão selecionada: {selected_session}")
+                print("O que deseja fazer?")
+                print("[1] - Carregar para trabalho (adicionar novas buscas)")
+                print("[2] - Apenas visualizar (não modifica a sessão)")
+                print("[0] - Cancelar")
+                
+                action_choice = input("Escolha uma opção: ").strip()
+                
+                if action_choice == "1":
+                    # Carrega para trabalho incremental
+                    try:
+                        shutil.copy2(session_path, "person_info.csv")
+                        print(f"✅ Sessão '{selected_session}' carregada para trabalho")
+                        print("💡 Use opção [1] para adicionar buscas ou [2] para visualizar")
+                        return {"type": "work", "file": selected_session, "path": session_path}
+                    except Exception as e:
+                        print(f"❌ Erro ao carregar sessão: {e}")
+                        return None
+                        
+                elif action_choice == "2":
+                    # Apenas visualizar
+                    print(f"✅ Preparando visualização da sessão '{selected_session}'")
+                    return {"type": "view", "file": selected_session, "path": session_path}
+                    
+                else:
+                    print("❌ Operação cancelada")
+                    return None
+                    
             else:
                 print("❌ Opção inválida")
                 return None
@@ -193,50 +225,7 @@ def manage_sessions(sessions_dir, action):
             print("❌ Entrada inválida")
             return None
     
-    elif action == "load_incremental":
-        # Carregar sessão para trabalho incremental
-        if not os.path.exists(sessions_dir):
-            print("❌ Nenhuma sessão encontrada")
-            return None
-        
-        session_files = [f for f in os.listdir(sessions_dir) if f.endswith('.csv')]
-        
-        if not session_files:
-            print("❌ Nenhuma sessão encontrada")
-            return None
-        
-        print(f"\n📋 Sessões disponíveis para carregamento incremental:")
-        for i, session_file in enumerate(session_files, 1):
-            try:
-                import pandas as pd
-                session_path = os.path.join(sessions_dir, session_file)
-                df = pd.read_csv(session_path)
-                count = len(df)
-                print(f"[{i}] {session_file} ({count} personalidade{'s' if count != 1 else ''})")
-            except:
-                print(f"[{i}] {session_file}")
-        
-        try:
-            choice = int(input("\nEscolha uma sessão para carregar incrementalmente (número): ")) - 1
-            if 0 <= choice < len(session_files):
-                selected_session = session_files[choice]
-                session_path = os.path.join(sessions_dir, selected_session)
-                
-                # Copia a sessão para o arquivo de trabalho atual
-                try:
-                    shutil.copy2(session_path, "person_info.csv")
-                    print(f"✅ Sessão '{selected_session}' carregada para trabalho incremental")
-                    print("💡 Agora você pode fazer novas buscas que serão adicionadas a esta sessão")
-                    return selected_session
-                except Exception as e:
-                    print(f"❌ Erro ao carregar sessão: {e}")
-                    return None
-            else:
-                print("❌ Opção inválida")
-                return None
-        except ValueError:
-            print("❌ Entrada inválida")
-            return None
+
     
     return None
 
