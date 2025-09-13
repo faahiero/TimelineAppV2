@@ -58,6 +58,13 @@ while True:
         
         print("\n✅ Correção de coordenadas concluída!")
         time.sleep(3)
+    elif options == "7":
+        session_file = manage_sessions(SESSIONS_DIR, "load_incremental")
+        if session_file:
+            print(f"📂 Sessão '{session_file}' carregada com sucesso!")
+            print("🔍 Agora você pode fazer novas buscas usando a opção [1]")
+            print("💾 As novas personalidades serão adicionadas à sessão atual")
+        time.sleep(3)
     elif options == "0":
         clear_console()
         print("Saindo...")

@@ -48,6 +48,7 @@ def display_menu():
     
     load_status = f"{VERDE}✓{NORMAL}" if sessions_exist else f"{CINZA}✗{NORMAL}"
     print(f"[5] - Carregar sessão e gerar visualização {load_status}")
+    print(f"[7] - Carregar sessão para adicionar novas buscas {load_status}")
     
     print(f"\n{VERDE}🔧 FERRAMENTAS{NORMAL}")
     fix_coords_status = f"{VERDE}✓{NORMAL}" if person_csv_exists else f"{CINZA}✗{NORMAL}"
@@ -56,14 +57,9 @@ def display_menu():
     print(f"\n{AMARELO}[0] - Encerrar programa{NORMAL}")
     print("-" * 50)
     
-    # Mostra informações de status
+    # Mostra informações de status da sessão atual
     if person_csv_exists:
-        try:
-            import pandas as pd
-            df = pd.read_csv("person_info.csv")
-            print(f"{CINZA}📋 Dados atuais: {len(df)} personalidade(s) carregada(s){NORMAL}")
-        except:
-            pass
+        show_session_status()
     
     if sessions_exist:
         try:
@@ -129,7 +125,7 @@ def calcula_seculo(data: str):
         return seculo_formatado
 
 def manage_sessions(sessions_dir, action):
-    """Gerencia sessões salvas (salvar/carregar)"""
+    """Gerencia sessões salvas (salvar/carregar/carregar incremental)"""
     import shutil
     from datetime import datetime
     
@@ -197,4 +193,104 @@ def manage_sessions(sessions_dir, action):
             print("❌ Entrada inválida")
             return None
     
+    elif action == "load_incremental":
+        # Carregar sessão para trabalho incremental
+        if not os.path.exists(sessions_dir):
+            print("❌ Nenhuma sessão encontrada")
+            return None
+        
+        session_files = [f for f in os.listdir(sessions_dir) if f.endswith('.csv')]
+        
+        if not session_files:
+            print("❌ Nenhuma sessão encontrada")
+            return None
+        
+        print(f"\n📋 Sessões disponíveis para carregamento incremental:")
+        for i, session_file in enumerate(session_files, 1):
+            try:
+                import pandas as pd
+                session_path = os.path.join(sessions_dir, session_file)
+                df = pd.read_csv(session_path)
+                count = len(df)
+                print(f"[{i}] {session_file} ({count} personalidade{'s' if count != 1 else ''})")
+            except:
+                print(f"[{i}] {session_file}")
+        
+        try:
+            choice = int(input("\nEscolha uma sessão para carregar incrementalmente (número): ")) - 1
+            if 0 <= choice < len(session_files):
+                selected_session = session_files[choice]
+                session_path = os.path.join(sessions_dir, selected_session)
+                
+                # Copia a sessão para o arquivo de trabalho atual
+                try:
+                    shutil.copy2(session_path, "person_info.csv")
+                    print(f"✅ Sessão '{selected_session}' carregada para trabalho incremental")
+                    print("💡 Agora você pode fazer novas buscas que serão adicionadas a esta sessão")
+                    return selected_session
+                except Exception as e:
+                    print(f"❌ Erro ao carregar sessão: {e}")
+                    return None
+            else:
+                print("❌ Opção inválida")
+                return None
+        except ValueError:
+            print("❌ Entrada inválida")
+            return None
+    
     return None
+
+def get_current_session_info():
+    """Retorna informações sobre a sessão atual"""
+    if not os.path.exists("person_info.csv"):
+        return None
+    
+    try:
+        import pandas as pd
+        df = pd.read_csv("person_info.csv")
+        
+        # Conta personalidades únicas
+        unique_people = df['Nome Completo'].nunique()
+        total_records = len(df)
+        
+        # Verifica se há países diferentes (indicativo de sessão diversificada)
+        countries = df['Origem/Nacionalidade'].nunique()
+        
+        # Verifica se há séculos diferentes
+        centuries = df['Século'].nunique()
+        
+        return {
+            'total_records': total_records,
+            'unique_people': unique_people,
+            'countries': countries,
+            'centuries': centuries,
+            'people_list': df['Nome Completo'].unique()[:5].tolist()  # Primeiros 5 nomes
+        }
+    except:
+        return None
+
+def show_session_status():
+    """Mostra o status detalhado da sessão atual"""
+    VERDE = "\033[1;32m"
+    AMARELO = "\033[1;33m"
+    CIANO = "\033[1;36m"
+    NORMAL = "\033[0m"
+    
+    session_info = get_current_session_info()
+    
+    if not session_info:
+        print(f"{AMARELO}📋 Nenhuma sessão ativa{NORMAL}")
+        return
+    
+    print(f"{CIANO}📊 STATUS DA SESSÃO ATUAL:{NORMAL}")
+    print(f"   • {session_info['unique_people']} personalidade(s) única(s)")
+    print(f"   • {session_info['countries']} país(es) diferente(s)")
+    print(f"   • {session_info['centuries']} século(s) diferente(s)")
+    
+    if session_info['people_list']:
+        names_preview = ', '.join(session_info['people_list'])
+        if session_info['unique_people'] > 5:
+            names_preview += f" e mais {session_info['unique_people'] - 5}..."
+        print(f"   • Personalidades: {names_preview}")
+    
+    print()
