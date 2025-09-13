@@ -243,11 +243,15 @@ def generate_visualization(browser_history=False, custom_file_path=None):
     if not os.path.exists("data/"):
         os.makedirs("data/")
     
-    # Só move o arquivo se ele não estiver já na pasta data/
-    if not FILE_NAME.startswith("data/"):
+    # Só move o arquivo se ele não estiver já na pasta data/ e não for um arquivo de sessão temporário
+    if not FILE_NAME.startswith("data/") and not custom_file_path:
+        # Move apenas se for uma visualização de dados atuais (não de sessão)
         shutil.move(FILE_NAME, "data/" + timestamp_fname + os.path.basename(FILE_NAME))
-    else:
+    elif FILE_NAME.startswith("data/"):
         print(f"Arquivo já está na pasta data/: {FILE_NAME}")
+    else:
+        # Se é um custom_file_path (sessão), não move o arquivo person_info.csv
+        print("Visualização de sessão concluída - dados preservados")
 
     # run server and wait for execution and hide messages
     print("Abrindo visualização no navegador...")
