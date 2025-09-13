@@ -37,16 +37,37 @@ def generate_visualization(browser_history=False):
     )
 
     if not os.path.exists(FILE_NAME):
-        print("Arquivo não encontrado")
-        time.sleep(2)
-        return
+        print(f"Arquivo {FILE_NAME} não encontrado no diretório atual")
+        print("Verificando se existe na pasta data/...")
+        
+        # Procurar o arquivo mais recente na pasta data/
+        if os.path.exists("data/"):
+            data_files = [f for f in os.listdir("data/") if f.endswith(FILE_NAME)]
+            if data_files:
+                # Pegar o arquivo mais recente
+                latest_file = max(data_files, key=lambda x: os.path.getctime(os.path.join("data/", x)))
+                print(f"Usando arquivo mais recente: data/{latest_file}")
+                FILE_NAME = os.path.join("data/", latest_file)
+            else:
+                print("Nenhum arquivo encontrado na pasta data/")
+                time.sleep(2)
+                return
+        else:
+            print("Pasta data/ não existe")
+            time.sleep(2)
+            return
 
     df = pd.read_csv(FILE_NAME)
 
-    # app = dash.Dash(__name__)
+    # Configurar logging para evitar mensagens desnecessárias
     app = dash.Dash(__name__)
-    log = logging.getLogger("werkzeug")
-    log.disabled = True
+    
+    # Desabilitar logs do werkzeug e dash
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+    logging.getLogger("dash").setLevel(logging.ERROR)
+    
+    # Configurar para não mostrar mensagens de debug
+    app.logger.disabled = True
 
     app.layout = html.Div(
         [
@@ -189,11 +210,26 @@ def generate_visualization(browser_history=False):
 
     if not os.path.exists("data/"):
         os.makedirs("data/")
-    shutil.move(FILE_NAME, "data/" + timestamp_fname + FILE_NAME)
+    
+    # Só move o arquivo se ele não estiver já na pasta data/
+    if not FILE_NAME.startswith("data/"):
+        shutil.move(FILE_NAME, "data/" + timestamp_fname + os.path.basename(FILE_NAME))
+    else:
+        print(f"Arquivo já está na pasta data/: {FILE_NAME}")
 
     # run server and wait for execution and hide messages
+    print("Abrindo visualização no navegador...")
+    print("Pressione Ctrl+C para encerrar o servidor")
     webbrowser.open("http://127.0.0.1:8050/")
-    app.run_server(use_reloader=False, debug=True)
+    
+    try:
+        app.run(debug=False, host='127.0.0.1', port=8050, use_reloader=False)
+    except KeyboardInterrupt:
+        print("\nServidor encerrado pelo usuário")
+    except Exception as e:
+        print(f"Erro no servidor: {e}")
+    finally:
+        print("Visualização encerrada")
 
 
 def generate_visualization_history():
