@@ -20,6 +20,8 @@ from modules.plot_components.popup import popup_html
 from modules.plot_components.range_slider import range_slide_component
 from modules.plots.bar_plot import stacked_bar_plot
 from modules.plots.scatter_plot import scatter_plot_chart
+from modules.plots.heatmap_plot import heatmap_by_century_country, geographic_heatmap
+from modules.plots.timeline_plot import timeline_plot
 from modules.utils import clear_console, write_to_csv, calcula_seculo
 from modules.wiki_functions import sparql_query_wikidata
 from modules.webscraping_functions import extract_full_name
@@ -30,11 +32,15 @@ FILE_NAME = ""
 
 
 # Função que gera a visualização com as informações salvas no arquivo csv.
-def generate_visualization(browser_history=False):
+def generate_visualization(browser_history=False, custom_file_path=None):
     timestamp_fname = datetime.now().strftime("%Y%m%d-%H%M%S") + "_"
-    FILE_NAME = (
-        "browser_history_person_info.csv" if browser_history else "person_info.csv"
-    )
+    
+    if custom_file_path:
+        FILE_NAME = custom_file_path
+    else:
+        FILE_NAME = (
+            "browser_history_person_info.csv" if browser_history else "person_info.csv"
+        )
 
     if not os.path.exists(FILE_NAME):
         print(f"Arquivo {FILE_NAME} não encontrado no diretório atual")
@@ -143,6 +149,32 @@ def generate_visualization(browser_history=False):
                 children=[
                     dcc.Graph(
                         figure=scatter_plot_chart(df),
+                        style={
+                            "display": "inline-block",
+                            "verticalAlign": "middle",
+                            "margin": "70px 0px 0px 0px",
+                        },
+                    )
+                ],
+            ),
+            html.Div(
+                style={"textAlign": "center"},
+                children=[
+                    dcc.Graph(
+                        figure=heatmap_by_century_country(df),
+                        style={
+                            "display": "inline-block",
+                            "verticalAlign": "middle",
+                            "margin": "70px 0px 0px 0px",
+                        },
+                    )
+                ],
+            ),
+            html.Div(
+                style={"textAlign": "center"},
+                children=[
+                    dcc.Graph(
+                        figure=timeline_plot(df),
                         style={
                             "display": "inline-block",
                             "verticalAlign": "middle",
