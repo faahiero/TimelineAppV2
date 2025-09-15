@@ -5,60 +5,78 @@ import pandas as pd
 import os
 from modules.wiki_functions import sparql_query_wikidata
 
-def fix_missing_coordinates(csv_file="person_info.csv"):
-    """Corrige coordenadas ausentes no arquivo CSV"""
-    if not os.path.exists(csv_file):
-        print(f"Arquivo {csv_file} não encontrado.")
+def fix_missing_coordinates():
+    """Corrige coordenadas ausentes via SQLite na sessão ativa"""
+    from modules.data_adapter import data_adapter
+    
+    # Busca personalidades da sessão ativa
+    active_session = data_adapter.active_saved_session or data_adapter.current_session
+    personalities = data_adapter.db.get_session_personalities(active_session)
+    
+    if not personalities:
+        print("Nenhuma personalidade encontrada na sessão ativa.")
         return
     
-    # Lê o CSV
-    df = pd.read_csv(csv_file)
+    # Identifica personalidades com coordenadas ausentes
+    missing_coords = []
+    for p in personalities:
+        if (not p.get('latitude') or not p.get('longitude') or 
+            p.get('latitude') == 'Não Informado' or p.get('longitude') == 'Não Informado'):
+            missing_coords.append(p)
     
-    # Identifica linhas com coordenadas ausentes
-    missing_coords = df[
-        (df['Latitude'] == 'Não Informado') | 
-        (df['Longitude'] == 'Não Informado') |
-        (df['Latitude'].isna()) | 
-        (df['Longitude'].isna())
-    ]
-    
-    if missing_coords.empty:
+    if not missing_coords:
         print("Todas as coordenadas já estão preenchidas.")
         return
     
     print(f"Encontradas {len(missing_coords)} personalidades sem coordenadas:")
     
     updated_count = 0
-    for idx, row in missing_coords.iterrows():
-        nome = row['Nome Completo']
-        termo_buscado = row['Termo Buscado']
+    for person in missing_coords:
+        nome = person.get('full_name', '')
         
         print(f"Tentando obter coordenadas para: {nome}")
         
-        # Tenta buscar dados atualizados
-        sparql_data = sparql_query_wikidata(termo_buscado)
+        # Tenta buscar dados atualizados via SPARQL
+        from modules.wiki_functions import sparql_query_wikidata
+        sparql_data = sparql_query_wikidata(nome)
         
-        if sparql_data and sparql_data.get('Latitude') != 'Não Informado' and sparql_data.get('Longitude') != 'Não Informado':
-            # Atualiza as coordenadas no DataFrame
-            df.at[idx, 'Latitude'] = sparql_data['Latitude']
-            df.at[idx, 'Longitude'] = sparql_data['Longitude']
+        if (sparql_data and 
+            sparql_data.get('Latitude') != 'Não Informado' and 
+            sparql_data.get('Longitude') != 'Não Informado'):
             
-            print(f"✓ Coordenadas atualizadas para {nome}: {sparql_data['Latitude']}, {sparql_data['Longitude']}")
-            updated_count += 1
+            # Atualiza as coordenadas no banco SQLite
+            import sqlite3
+            try:
+                with sqlite3.connect(data_adapter.db.db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE personalities 
+                        SET latitude = ?, longitude = ? 
+                        WHERE id = ?
+                    """, (sparql_data['Latitude'], sparql_data['Longitude'], person['id']))
+                    
+                print(f"✓ Coordenadas atualizadas para {nome}: {sparql_data['Latitude']}, {sparql_data['Longitude']}")
+                updated_count += 1
+            except Exception as e:
+                print(f"✗ Erro ao atualizar {nome}: {e}")
         else:
             print(f"✗ Não foi possível obter coordenadas para {nome}")
     
     if updated_count > 0:
-        # Salva o arquivo atualizado
-        df.to_csv(csv_file, index=False)
-        print(f"\n{updated_count} coordenadas foram atualizadas e salvas em {csv_file}")
+        print(f"\n{updated_count} coordenadas foram atualizadas no banco de dados")
     else:
         print("\nNenhuma coordenada foi atualizada.")
 
-def add_default_coordinates_by_country(csv_file="person_info.csv"):
-    """Adiciona coordenadas padrão baseadas no país quando não há coordenadas específicas"""
-    if not os.path.exists(csv_file):
-        print(f"Arquivo {csv_file} não encontrado.")
+def add_default_coordinates_by_country():
+    """Adiciona coordenadas padrão baseadas no país via SQLite na sessão ativa"""
+    from modules.data_adapter import data_adapter
+    
+    # Busca personalidades da sessão ativa
+    active_session = data_adapter.active_saved_session or data_adapter.current_session
+    personalities = data_adapter.db.get_session_personalities(active_session)
+    
+    if not personalities:
+        print("Nenhuma personalidade encontrada na sessão ativa.")
         return
     
     # Coordenadas das capitais dos países
@@ -82,39 +100,45 @@ def add_default_coordinates_by_country(csv_file="person_info.csv"):
         "Coreia do Sul": (37.5665, 126.9780),  # Seul
     }
     
-    # Lê o CSV
-    df = pd.read_csv(csv_file)
+    # Identifica personalidades com coordenadas ausentes
+    missing_coords = []
+    for p in personalities:
+        if (not p.get('latitude') or not p.get('longitude') or 
+            p.get('latitude') == 'Não Informado' or p.get('longitude') == 'Não Informado'):
+            missing_coords.append(p)
     
-    # Identifica linhas com coordenadas ausentes
-    missing_coords = df[
-        (df['Latitude'] == 'Não Informado') | 
-        (df['Longitude'] == 'Não Informado') |
-        (df['Latitude'].isna()) | 
-        (df['Longitude'].isna())
-    ]
-    
-    if missing_coords.empty:
+    if not missing_coords:
         print("Todas as coordenadas já estão preenchidas.")
         return
     
     updated_count = 0
-    for idx, row in missing_coords.iterrows():
-        pais = row['Origem/Nacionalidade']
-        nome = row['Nome Completo']
+    for person in missing_coords:
+        pais = person.get('country', '')
+        nome = person.get('full_name', '')
         
         if pais in country_coords:
             lat, lon = country_coords[pais]
-            df.at[idx, 'Latitude'] = lat
-            df.at[idx, 'Longitude'] = lon
-            print(f"✓ Coordenadas padrão adicionadas para {nome} ({pais}): {lat}, {lon}")
-            updated_count += 1
+            
+            # Atualiza no banco SQLite
+            import sqlite3
+            try:
+                with sqlite3.connect(data_adapter.db.db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE personalities 
+                        SET latitude = ?, longitude = ? 
+                        WHERE id = ?
+                    """, (lat, lon, person['id']))
+                    
+                print(f"✓ Coordenadas padrão adicionadas para {nome} ({pais}): {lat}, {lon}")
+                updated_count += 1
+            except Exception as e:
+                print(f"✗ Erro ao atualizar {nome}: {e}")
         else:
             print(f"✗ País '{pais}' não encontrado na lista de coordenadas padrão para {nome}")
     
     if updated_count > 0:
-        # Salva o arquivo atualizado
-        df.to_csv(csv_file, index=False)
-        print(f"\n{updated_count} coordenadas padrão foram adicionadas e salvas em {csv_file}")
+        print(f"\n{updated_count} coordenadas padrão foram adicionadas no banco de dados")
     else:
         print("\nNenhuma coordenada padrão foi adicionada.")
 

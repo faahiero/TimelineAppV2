@@ -13,10 +13,8 @@ attempts = 0
 
 
 # Função principal da aplicação, responsável por obter os dados solicitados.
-# Ela chama as outras funções. Ao final da execução, gera um arquivo csv que
-# será utilizado para gerar a visualização.
+# Os dados são salvos diretamente no SQLite via data_adapter.
 def fetch_data(search_term, is_correct_term):
-    FILE_NAME = "person_info.csv"
     global attempts
     if not is_correct_term:
         search_term = input("Digite o nome da personalidade (0 para encerrar): ")
@@ -27,21 +25,70 @@ def fetch_data(search_term, is_correct_term):
 
     clear_console()
 
+    # PRIMEIRA BUSCA INTELIGENTE: Verifica termo original no banco
+    from modules.data_adapter import data_adapter
+    
+    print(f"🔍 Buscando '{search_term}' no banco de dados...")
+    existing_data = data_adapter.smart_search_and_add(search_term)
+    if existing_data:
+        print(f"📊 Personalidade encontrada no banco! Evitando consulta à Wikipedia")
+        print(f"   Nome: {existing_data.get('full_name', 'N/A')}")
+        print(f"   País: {existing_data.get('country', 'N/A')}")
+        print(f"   Século: {existing_data.get('century', 'N/A')}")
+        print("✅ Personalidade vinculada à sessão temporária")
+        time.sleep(3)
+        return
+
+    print(f"❌ '{search_term}' não encontrado no banco")
+    print(f"🔧 Corrigindo termo de busca via Wikipedia...")
+
     # Chamada da função que tenta corrigir o termo de busca,
     # para garantir que o termo exista na wikipedia.
     correct_search_term = webscraping.get_correct_search_term(search_term)
     if correct_search_term is None:
+        print("❌ Termo não encontrado na Wikipedia")
         time.sleep(4)
         return
-    print("Termo buscado: " + search_term)
+    
+    print(f"✅ Termo corrigido: '{correct_search_term}'")
+    
+    # SEGUNDA BUSCA INTELIGENTE: Verifica termo corrigido no banco
+    if correct_search_term != search_term:
+        print(f"🔍 Verificando termo corrigido '{correct_search_term}' no banco...")
+        existing_corrected_data = data_adapter.smart_search_and_add(correct_search_term)
+        if existing_corrected_data:
+            print(f"📊 Personalidade encontrada com termo corrigido! Evitando consulta à Wikipedia")
+            print(f"   Nome: {existing_corrected_data.get('full_name', 'N/A')}")
+            print(f"   País: {existing_corrected_data.get('country', 'N/A')}")
+            print(f"   Século: {existing_corrected_data.get('century', 'N/A')}")
+            print("✅ Personalidade vinculada à sessão temporária")
+            time.sleep(3)
+            return
+        else:
+            print(f"❌ Termo corrigido também não encontrado no banco")
+    
+    print(f"🌐 Consultando Wikipedia para '{correct_search_term}' (não encontrado no banco)...")
+    
+    # Destaca o termo buscado original
+    print("=" * 60)
+    print(f"📝 TERMO BUSCADO ORIGINAL: '{search_term}'")
+    if correct_search_term != search_term:
+        print(f"🔧 TERMO CORRIGIDO: '{correct_search_term}'")
+    print("=" * 60)
 
     # Pesquisa o termo, após corrigido, na lib wptools.
     page = search_wikidata(correct_search_term)
     get_wiki_data = page.get_wikidata()
 
+    # Verifica se os dados foram obtidos corretamente
+    if not get_wiki_data or not hasattr(get_wiki_data, 'data') or not get_wiki_data.data:
+        print("Erro ao obter dados da Wikidata. Tente novamente.")
+        time.sleep(4)
+        return
+
     # Verifica se a instância da wikidata referente ao termo buscado possui a
     # propriedade 'Q5', que representa um ser humano, logo entende-se que é uma pessoa.
-    wikidata_labels = get_wiki_data.data["labels"]
+    wikidata_labels = get_wiki_data.data.get("labels", {})
     if "Q5" not in wikidata_labels:
         print("Termo buscado não é uma pessoa. Tente novamente.")
         time.sleep(4)
@@ -72,6 +119,16 @@ def fetch_data(search_term, is_correct_term):
     summary = get_summary(correct_search_term)
 
     clear_console()
+    
+    # Exibe informações de busca antes do resumo
+    print("=" * 80)
+    print(f"📝 TERMO BUSCADO ORIGINAL: '{search_term}'")
+    if correct_search_term != search_term:
+        print(f"🔧 TERMO CORRIGIDO: '{correct_search_term}'")
+    print("=" * 80)
+    print()
+    print("📖 RESUMO DA WIKIPEDIA:")
+    print("-" * 40)
     print(summary)
 
     while True:
@@ -84,13 +141,15 @@ def fetch_data(search_term, is_correct_term):
             break
     if answer == "s":
         time.sleep(4)
-        wiki_data = get_wiki_data.data["wikidata"]
+        wiki_data = get_wiki_data.data.get("wikidata", {}) if get_wiki_data.data else {}
 
         # URL do artigo na wikipedia, utilizado para fazer Webscraping diretamente na página
         # do artigo e obter o nome completo, caso não seja possível obter pela wptools, e
         # também para compor o arquivo csv.
         get_rest_base = page.get_restbase()
-        page_url = get_rest_base.data["url"]
+        page_url = ""
+        if get_rest_base and hasattr(get_rest_base, 'data') and get_rest_base.data:
+            page_url = get_rest_base.data.get("url", "")
 
         # NOME COMPLETO
         # Trecho que utilizo para obter o nome completo da pessoa.
@@ -140,7 +199,8 @@ def fetch_data(search_term, is_correct_term):
             "Imagem": imagem,
         }
 
-        write_to_csv(person_info, FILE_NAME)
+        # Dados salvos diretamente no SQLite via data_adapter
+        data_adapter.write_to_csv_compatible(person_info)
 
         clear_console()
         print()
