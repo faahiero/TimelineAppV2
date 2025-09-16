@@ -105,7 +105,6 @@ feature/sistema-geohist-melhorado/
 │   ├── webscraping_functions.py (User-Agent headers)
 │   ├── coordinate_fixer.py (correção coordenadas)
 │   ├── cache_manager.py (sistema de cache)
-│   ├── data_validator.py (validação dados)
 │   ├── logger_config.py (logging)
 │   ├── rate_limiter.py (rate limiting)
 │   └── plots/

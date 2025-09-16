@@ -319,9 +319,11 @@ class DatabaseManager:
             return []
     
     def delete_session(self, session_name: str) -> bool:
-        """Remove uma sessão e seus relacionamentos"""
+        """Remove uma sessão e seus relacionamentos (com CASCADE DELETE)"""
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # IMPORTANTE: Habilita foreign keys para CASCADE DELETE funcionar
+                conn.execute("PRAGMA foreign_keys = ON")
                 cursor = conn.cursor()
                 cursor.execute("DELETE FROM sessions WHERE name = ?", (session_name,))
                 return cursor.rowcount > 0
@@ -502,6 +504,8 @@ class DatabaseManager:
         """Remove uma sessão mas mantém personalidades no banco (apenas quebra vínculos)"""
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # IMPORTANTE: Habilita foreign keys para CASCADE DELETE funcionar
+                conn.execute("PRAGMA foreign_keys = ON")
                 cursor = conn.cursor()
                 
                 # NOVA LÓGICA: Nunca remove personalidades, apenas quebra vínculos

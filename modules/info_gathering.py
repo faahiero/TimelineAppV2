@@ -4,7 +4,7 @@ import time
 from alphabet_detector import AlphabetDetector
 
 import modules.webscraping_functions as webscraping
-from modules.utils import calcula_seculo, clear_console, write_to_csv
+from modules.utils import calcula_seculo, clear_console
 from modules.wiki_functions import get_summary, search_wikidata, sparql_query_wikidata
 
 alphabet_detector = AlphabetDetector()

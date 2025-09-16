@@ -22,13 +22,11 @@ from modules.plots.bar_plot import stacked_bar_plot
 from modules.plots.scatter_plot import scatter_plot_chart
 from modules.plots.heatmap_plot import heatmap_by_century_country, geographic_heatmap
 from modules.plots.timeline_plot import timeline_plot
-from modules.utils import clear_console, write_to_csv, calcula_seculo
+from modules.utils import clear_console, calcula_seculo
 from modules.wiki_functions import sparql_query_wikidata
 from modules.webscraping_functions import extract_full_name
 
 alphabet_detector = AlphabetDetector()
-
-FILE_NAME = ""
 
 
 # Função que gera a visualização com as informações salvas no arquivo csv.
@@ -323,7 +321,6 @@ def generate_visualization(browser_history=False, custom_file_path=None):
 
 
 def generate_visualization_history():
-    FILE_NAME = "browser_history_person_info.csv"
     clear_console()
     print("Obtendo histórico dos navagadores instalados")
     print("Isso pode demorar alguns minutos")
@@ -436,7 +433,7 @@ def generate_visualization_history():
     # Salva cada personalidade no banco de dados
     for person in person_info:
         try:
-            success = data_adapter.write_to_csv_compatible(person, FILE_NAME)
+            success = data_adapter.write_to_csv_compatible(person)
             if success:
                 saved_count += 1
         except Exception as e:

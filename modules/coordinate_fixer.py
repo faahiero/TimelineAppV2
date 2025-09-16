@@ -1,7 +1,6 @@
 """
 Módulo para corrigir coordenadas ausentes nos dados existentes
 """
-import pandas as pd
 import os
 from modules.wiki_functions import sparql_query_wikidata
 

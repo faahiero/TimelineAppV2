@@ -108,9 +108,9 @@ def int_to_roman(input):
     return ''.join(result)
 
 
-def write_to_csv(person_info, file_name):
+def write_to_csv(person_info, file_name=None):
     """Função compatível que agora usa SQLite internamente"""
-    return data_adapter.write_to_csv_compatible(person_info, file_name)
+    return data_adapter.write_to_csv_compatible(person_info)
 
 
 def calcula_seculo(data: str):
@@ -300,6 +300,9 @@ def manage_sessions(sessions_dir, action):
             print("❌ Nenhuma sessão salva encontrada")
             return None
         
+        # Inicializa variável de controle para forçar recarregamento
+        force_reload = False
+        
         # NOVA LÓGICA: Verifica tipo de sessão ativa e se há modificações
         if data_adapter._is_memory_session_active():
             # Há sessão em memória ativa
@@ -332,10 +335,15 @@ def manage_sessions(sessions_dir, action):
                         return None
                 elif temp_choice == "0":
                     return None
-                # Se escolheu 1, continua normalmente (modificações serão perdidas)
-            
-            # Se não há modificações, continua normalmente (será verificado se é a mesma sessão mais adiante)
-        
+                elif temp_choice == "1":
+                    # Usuário escolheu descartar modificações - marca para forçar recarregamento
+                    force_reload = True
+                else:
+                    print("❌ Opção inválida")
+                    return None
+            else:
+                # Não há modificações - carregamento normal
+                force_reload = False
         elif data_adapter.has_temp_data():
             # Há dados na sessão temporária regular
             print("⚠️  ATENÇÃO: Há dados na sessão temporária atual!")
@@ -356,7 +364,15 @@ def manage_sessions(sessions_dir, action):
                     return None
             elif temp_choice == "0":
                 return None
-            # Se escolheu 1, continua normalmente (dados temporários serão perdidos)
+            elif temp_choice == "1":
+                # Continua normalmente (dados temporários serão perdidos)
+                force_reload = False
+            else:
+                print("❌ Opção inválida")
+                return None
+        else:
+            # Não há dados em memória nem temporários - carregamento normal
+            force_reload = False
         
         print(f"\n📋 Sessões salvas disponíveis:")
         for i, session in enumerate(saved_sessions, 1):
@@ -372,18 +388,30 @@ def manage_sessions(sessions_dir, action):
                 selected_session = saved_sessions[choice]
                 session_name = selected_session['name']
                 
-                # OTIMIZAÇÃO: Verifica se é a mesma sessão já carregada em memória ANTES de qualquer consulta ao banco
-                if data_adapter._is_memory_session_active():
-                    current_memory_session = data_adapter.memory_session['loaded_from_db']
-                    if current_memory_session == session_name:
-                        print(f"\nℹ️  A sessão '{session_name}' já está carregada em memória!")
-                        current_info = data_adapter.get_current_session_info()
-                        if current_info:
-                            print(f"   • {current_info['unique_people']} personalidade(s) disponíveis")
-                        print("   • Você pode adicionar novas personalidades ou gerar visualizações")
-                        print("   • Mantendo a sessão atual...")
+                # OTIMIZAÇÃO: Verifica se é a mesma sessão já carregada ANTES de qualquer consulta ao banco
+                # MAS só se não estiver forçando recarregamento (quando usuário escolheu descartar modificações)
+                session_already_loaded = False
+                
+                if not force_reload:
+                    # Verificação 1: Sessão em memória
+                    if data_adapter._is_memory_session_active():
+                        current_memory_session = data_adapter.memory_session['loaded_from_db']
+                        if current_memory_session == session_name:
+                            session_already_loaded = True
+                    
+                    # Verificação 2: Sessão salva ativa
+                    if data_adapter.active_saved_session == session_name:
+                        session_already_loaded = True
+                    
+                    if session_already_loaded:
+                        print()  # Linha em branco para espaçamento
+                        message = get_session_status_message(session_name)
+                        print(message)
                         time.sleep(2)
                         return {"type": "active", "file": session_name, "loaded": False, "already_loaded": True}
+                elif force_reload:
+                    # Usuário escolheu descartar modificações - forçar recarregamento
+                    print(f"\n🔄 Recarregando sessão '{session_name}' (descartando modificações)...")
                 
                 # Nova lógica: carrega a sessão como ativa (permite visualização E adição de dados)
                 # Só executa consulta ao banco se for sessão diferente da já carregada
@@ -585,6 +613,41 @@ def show_session_status():
         print(f"   • Personalidades: {names_preview}")
     
     print()
+
+def get_session_status_message(session_name):
+    """Retorna mensagem contextual baseada no estado da sessão"""
+    current_info = data_adapter.get_current_session_info()
+    is_dirty = data_adapter.memory_session.get('is_dirty', False)
+    recently_saved = (data_adapter.recently_saved_session == session_name)
+    
+    if recently_saved:
+        # Contexto 2: Recém-salva
+        message = f"💾 A sessão '{session_name}' já está ativa com modificações salvas!"
+        if current_info:
+            message += f"\n   • {current_info['unique_people']} personalidade(s) disponíveis (✅ sincronizadas com o banco)"
+        message += "\n   • Modificações foram salvas com sucesso"
+        message += "\n   • Você pode continuar adicionando dados ou gerar visualizações"
+        
+        # Limpa o flag de recém-salva após mostrar a mensagem
+        data_adapter.recently_saved_session = None
+        return message
+        
+    elif is_dirty:
+        # Contexto 3: Com modificações pendentes
+        message = f"⚠️  A sessão '{session_name}' já está ativa com modificações não salvas!"
+        if current_info:
+            message += f"\n   • {current_info['unique_people']} personalidade(s) disponíveis (⚠️  há alterações pendentes)"
+        message += "\n   • Você tem modificações que ainda não foram salvas"
+        message += "\n   • Use a opção [4] para salvar ou continue adicionando dados"
+        return message
+        
+    else:
+        # Contexto 1: Normal
+        message = f"Deseja recarregar a sessão '{session_name}'?"
+        if current_info:
+            message += f"\n   • {current_info['unique_people']} personalidade(s) disponíveis"
+        message += "\n   • Carregamento substituirá dados atuais"
+        return message
 
 def show_database_statistics():
     """Mostra estatísticas detalhadas do banco de dados"""

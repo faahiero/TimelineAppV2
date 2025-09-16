@@ -38,11 +38,11 @@ while True:
         print("Histórico de navegação")
         generate_visualization_history()
     elif options == "4":
-        manage_sessions(SESSIONS_DIR, "save")
+        manage_sessions("", "save")
         time.sleep(2)
     elif options == "5":
         # Carrega sessão diretamente via SQLite - sem necessidade de backup CSV
-        session_result = manage_sessions(SESSIONS_DIR, "load")
+        session_result = manage_sessions("", "load")
         if session_result:
             clear_console()
             if session_result["type"] == "active":
@@ -191,6 +191,15 @@ while True:
             # Se escolheu 2, continua para sair sem salvar
         
         print("Saindo...")
+        
+        # Limpeza da sessão temporária ao sair
+        try:
+            from modules.data_adapter import data_adapter
+            print("🧹 Limpando sessão temporária...")
+            data_adapter.db.delete_session_with_personalities("temp_session", delete_personalities=False)
+        except Exception as e:
+            pass  # Falha silenciosa na limpeza
+        
         print("Obrigado por usar o software!!")
         time.sleep(1)
         sys.exit()

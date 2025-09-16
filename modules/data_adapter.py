@@ -4,7 +4,6 @@
 Adaptador para manter compatibilidade entre SQLite e sistema CSV atual
 """
 import os
-import pandas as pd
 from typing import Dict, Any, List, Optional
 from modules.database_manager import db_manager
 
@@ -17,6 +16,7 @@ class DataAdapter:
         self.temp_session = "temp_session"  # Sessão temporária
         self.current_session = self.temp_session  # Sempre inicia com sessão temporária
         self.active_saved_session = None  # Sessão salva ativa (None = usando temporária)
+        self.recently_saved_session = None  # Rastreia sessão que foi recém-salva
         
         # NOVA ESTRUTURA PARA SESSÃO EM MEMÓRIA
         self.memory_session = {
@@ -73,6 +73,8 @@ class DataAdapter:
                 # Limpa sessão em memória
                 self._clear_memory_session()
                 
+                # Marca como recém-salva para mensagens contextuais
+                self.recently_saved_session = session_name
                 print(f"✅ Sessão em memória salva como '{session_name}' com {len(personality_ids)} personalidade(s)")
                 return True
             else:
@@ -179,7 +181,7 @@ class DataAdapter:
             "Sessão temporária (dados perdidos ao encerrar sem salvar)"
         )
     
-    def write_to_csv_compatible(self, person_info: Dict[str, Any], file_name: str = "person_info.csv"):
+    def write_to_csv_compatible(self, person_info: Dict[str, Any]):
         """Substitui a função write_to_csv original, salvando no SQLite com busca inteligente"""
         # Busca primeiro se a personalidade já existe no banco
         search_term = person_info.get('Termo Buscado', '')
@@ -335,22 +337,18 @@ class DataAdapter:
         if not df_data:
             return None
         
-        df = pd.DataFrame(df_data)
-        
-        if df.empty:
-            return None
-        
-        unique_people = df['Nome Completo'].nunique()
-        countries = df['Origem/Nacionalidade'].nunique()
-        centuries = df['Século'].nunique()
-        people_list = df['Nome Completo'].unique()[:5].tolist()
+        # Calcula estatísticas usando Python puro
+        unique_people = len(set(item['Nome Completo'] for item in df_data if item['Nome Completo']))
+        countries = len(set(item['Origem/Nacionalidade'] for item in df_data if item['Origem/Nacionalidade']))
+        centuries = len(set(item['Século'] for item in df_data if item['Século']))
+        people_list = list(set(item['Nome Completo'] for item in df_data if item['Nome Completo']))[:5]
         
         # Verifica se realmente há dados válidos
         if unique_people == 0:
             return None
         
         return {
-            'total_records': len(df),
+            'total_records': len(df_data),
             'unique_people': unique_people,
             'countries': countries,
             'centuries': centuries,
@@ -426,11 +424,22 @@ class DataAdapter:
                 self.db.clear_session_relationships(self.temp_session)
                 print(f"🧹 Registros da sessão temporária removidos para evitar duplicação")
                 
-                # NOVA LÓGICA: Transiciona para a sessão salva
-                self.active_saved_session = session_name
-                print(f"✅ Sessão '{session_name}' salva com {len(personality_ids)} personalidade(s)")
-                print(f"🔄 Transicionando para sessão '{session_name}' - novas buscas serão adicionadas aqui")
-                return True
+                # NOVA LÓGICA: Transiciona para a sessão salva CARREGANDO EM MEMÓRIA
+                # Primeiro carrega a sessão salva em memória
+                success_load = self.load_saved_session_to_temp(session_name)
+                if success_load:
+                    # Marca como recém-salva para mensagens contextuais  
+                    self.recently_saved_session = session_name
+                    print(f"✅ Sessão '{session_name}' salva com {len(personality_ids)} personalidade(s)")
+                    print(f"🔄 Sessão carregada em memória - novas buscas serão adicionadas aqui")
+                    return True
+                else:
+                    # Se falhar ao carregar em memória, pelo menos mantém referência ativa
+                    self.active_saved_session = session_name
+                    self.recently_saved_session = session_name
+                    print(f"✅ Sessão '{session_name}' salva com {len(personality_ids)} personalidade(s)")
+                    print(f"⚠️  Sessão salva mas não carregada em memória")
+                    return True
             else:
                 print(f"❌ Erro ao criar sessão '{session_name}'")
                 return False
@@ -467,6 +476,9 @@ class DataAdapter:
                 'original_count': len(personalities),
                 'is_dirty': False  # Ainda não foi modificada
             }
+            
+            # MARCA SESSÃO SALVA COMO ATIVA
+            self.active_saved_session = session_name
             
             # Limpa sessão temporária no banco
             self.clear_current_session()
@@ -657,11 +669,36 @@ class DataAdapter:
                 if s['name'] != self.current_session and s['personality_count'] > 0]
     
     def delete_session(self, session_name: str) -> bool:
-        """Remove uma sessão"""
+        """Remove uma sessão e limpa referências internas se necessário"""
         if session_name == self.current_session:
             return False  # Não permite remover sessão atual
         
-        return self.db.delete_session(session_name)
+        # Remove a sessão do banco
+        success = self.db.delete_session(session_name)
+        
+        if success:
+            # Limpa referências internas se a sessão removida estava ativa
+            if self.active_saved_session == session_name:
+                print(f"🧹 Limpando referência da sessão removida '{session_name}'")
+                self.active_saved_session = None
+            
+            # Limpa sessão em memória se corresponde à sessão removida
+            if (self._is_memory_session_active() and 
+                self.memory_session.get('loaded_from_db') == session_name):
+                print(f"🧹 Limpando sessão em memória correspondente à sessão removida")
+                self.memory_session = {
+                    'personalities': None,
+                    'loaded_from_db': None,
+                    'original_count': 0,
+                    'is_dirty': False
+                }
+            
+            # Limpa flag de recently_saved se corresponde
+            if self.recently_saved_session == session_name:
+                print(f"🧹 Limpando flag recently_saved da sessão removida")
+                self.recently_saved_session = None
+        
+        return success
     
     def get_database_statistics(self) -> Dict[str, Any]:
         """Retorna estatísticas do banco de dados"""
