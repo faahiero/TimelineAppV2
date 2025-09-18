@@ -404,9 +404,7 @@ def manage_sessions(sessions_dir, action):
                         session_already_loaded = True
                     
                     if session_already_loaded:
-                        print()  # Linha em branco para espaçamento
-                        message = get_session_status_message(session_name)
-                        print(message)
+                        print(f"ℹ️ Sessão '{session_name}' já está carregada e ativa. Nenhuma alteração detectada.")
                         time.sleep(2)
                         return {"type": "active", "file": session_name, "loaded": False, "already_loaded": True}
                 elif force_reload:
