@@ -35,7 +35,7 @@ def fetch_data(search_term, is_correct_term):
         print(f"   Nome: {existing_data.get('full_name', 'N/A')}")
         print(f"   País: {existing_data.get('country', 'N/A')}")
         print(f"   Século: {existing_data.get('century', 'N/A')}")
-        print("✅ Personalidade vinculada à sessão temporária")
+        # Mensagem já é exibida corretamente pela função smart_search_and_add
         time.sleep(3)
         return
 
@@ -61,7 +61,7 @@ def fetch_data(search_term, is_correct_term):
             print(f"   Nome: {existing_corrected_data.get('full_name', 'N/A')}")
             print(f"   País: {existing_corrected_data.get('country', 'N/A')}")
             print(f"   Século: {existing_corrected_data.get('century', 'N/A')}")
-            print("✅ Personalidade vinculada à sessão temporária")
+            # Mensagem já é exibida corretamente pela função smart_search_and_add
             time.sleep(3)
             return
         else:

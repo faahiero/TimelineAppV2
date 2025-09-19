@@ -278,8 +278,10 @@ class DataAdapter:
                     else:
                         # Vincula à sessão ativa (salva ou temporária)
                         self.db.add_to_session(target_session, [existing_personality['id']])
-                        session_type = f"sessão '{self.active_saved_session}'" if self.active_saved_session else "sessão temporária"
-                        print(f"🔗 '{full_name}' vinculada à {session_type}")
+                        if self.active_saved_session:
+                            print(f"✅ Personalidade vinculada à sessão '{self.active_saved_session}'")
+                        else:
+                            print(f"✅ Personalidade vinculada à sessão temporária")
                 
                 # Retorna os dados da personalidade encontrada
                 
