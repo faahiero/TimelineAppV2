@@ -55,7 +55,7 @@ def generate_visualization(browser_history=False, custom_file_path=None):
                 print(f"🔍 Gerando visualização para sessão temporária")
 
     if not session_data or len(session_data) == 0:
-        print("Nenhum dado encontrado na sessão selecionada.")
+        print("❌ Nenhum dado encontrado na sessão selecionada.")
         time.sleep(2)
         return
 

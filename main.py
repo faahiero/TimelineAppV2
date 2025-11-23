@@ -30,8 +30,6 @@ while True:
             sys.exit()
         fetch_data(search_term, True)
     elif options == "2":
-        clear_console()
-        print("Gerando visualizações")
         generate_visualization()
     elif options == "3":
         clear_console()
@@ -60,18 +58,16 @@ while True:
                 
         time.sleep(2)
     elif options == "6":
-        clear_console()
-        print("�️  Gerenciamento de Remoção de Sessões")
         result = manage_sessions(SESSIONS_DIR, "remove")
         if result:
             if result["type"] == "all":
                 print(f"🎉 Todas as {result['removed']} sessões foram removidas!")
             elif result["type"] == "single":
                 print(f"🎉 Sessão '{result['file']}' removida com sucesso!")
-        time.sleep(3)
+        time.sleep(2)
     elif options == "7":
         clear_console()
-        print("� Corrigindo coordenadas ausentes...")
+        print(" Corrigindo coordenadas ausentes...")
         
         print("1. Tentando obter coordenadas específicas via SPARQL...")
         fix_missing_coordinates()
