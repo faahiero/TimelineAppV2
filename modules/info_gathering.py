@@ -103,10 +103,13 @@ def fetch_data(search_term, is_correct_term):
 
     print("Obtendo informações...")
 
+    # Extrai o ID do Wikidata (ex: Q5582) para busca otimizada
+    wikidata_id = get_wiki_data.data.get('wikibase') if get_wiki_data and hasattr(get_wiki_data, 'data') else None
+
     # Após conseguir o nome completo, começo a utilizar a biblioteca SPARQLWrapper para obter os demais dados.
     # A biblioteca realiza consultas diretamente na wikidata, e retorna um objeto JSON com as informações.
     # A função query_wikidata retorna um objeto JSON com as informações necessárias.
-    sparql_query_data = sparql_query_wikidata(correct_search_term)
+    sparql_query_data = sparql_query_wikidata(correct_search_term, wikidata_id)
 
     if sparql_query_data is None:
         print("Não foi possível obter informações sobre a personalidade pesquisada.")

@@ -4,4 +4,4 @@ __pycache__/
 *.ipynb
 .vscode/
 data/*.csv
-data/*.html
+data/*.html*.db

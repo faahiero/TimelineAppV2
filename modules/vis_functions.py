@@ -86,6 +86,17 @@ def generate_visualization(browser_history=False, custom_file_path=None):
 
     df = pd.DataFrame(df_data)
 
+    # Debug: Informações sobre os dados carregados
+    print(f"🔍 Carregadas {len(df)} linhas para visualização.")
+    
+    # Conta coordenadas válidas
+    valid_coords_df = df.dropna(subset=['Latitude', 'Longitude'])
+    valid_coords_count = len(valid_coords_df)
+    print(f"📍 Registros com coordenadas válidas: {valid_coords_count}")
+    
+    if valid_coords_count == 0:
+        print("⚠️  Aviso: Nenhum registro possui coordenadas válidas para o mapa.")
+
     # Configurar logging para evitar mensagens desnecessárias
     app = dash.Dash(__name__)
     
