@@ -280,8 +280,12 @@ def generate_visualization(browser_history=False, custom_file_path=None):
             except (ValueError, TypeError):
                 return False
 
-        seculo_min = int(seculo[0])
-        seculo_max = int(seculo[1])
+        if isinstance(seculo, list):
+            seculo_min = int(seculo[0])
+            seculo_max = int(seculo[1])
+        else:
+            seculo_min = int(seculo)
+            seculo_max = int(seculo)
         markers = []
         for idx, row in df.iterrows():
             if not valid_coords(row):

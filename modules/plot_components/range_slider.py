@@ -25,24 +25,46 @@ def range_slide_component(dataframe):
         seculo_min = min(int(valor) for valor in seculo_values)
         seculo_max = max(int(valor) for valor in seculo_values)
         position = "right"
+        for valor in seculo_values:
+            seculo_values_marks[str(valor)] = str(valor)
 
-    # Correção para evitar crash do RangeSlider quando min == max (apenas 1 século nos dados)
+    # Salva os valores originais para usar no 'value' do slider
+    original_seculo_min = seculo_min
+    original_seculo_max = seculo_max
+
+    # Se houver apenas um século, usa dcc.Slider (ponto único)
     if seculo_min == seculo_max:
-        seculo_min -= 1
-        seculo_max += 1
-        # Atualiza marks para incluir os novos limites, se não existirem
-        if str(seculo_min) not in seculo_values_marks:
-            seculo_values_marks[str(seculo_min)] = str(seculo_min) if seculo_min > 0 else f"{abs(seculo_min)} a.C."
-        if str(seculo_max) not in seculo_values_marks:
-            seculo_values_marks[str(seculo_max)] = str(seculo_max) if seculo_max > 0 else f"{abs(seculo_max)} a.C."
+        # Cria um range artificial apenas para centralizar o ponto
+        slider_min = seculo_min - 1
+        slider_max = seculo_max + 1
+        
+        # Limpa os marks para mostrar APENAS o século real
+        # Isso esconde os números do range expandido (18 e 20)
+        single_mark = {str(seculo_min): str(seculo_min)} if seculo_min > 0 else {str(seculo_min): f"{abs(seculo_min)} a.C."}
+
+        return dcc.Slider(
+            id='seculo-slider',
+            min=slider_min,
+            max=slider_max,
+            value=original_seculo_min,
+            marks=single_mark, # Mostra rótulo apenas para o valor central
+            step=1,
+            vertical=False,
+            persistence=False,
+            disabled=True,
+            included=False, # Remove o preenchimento (sombra) à esquerda
+            tooltip={'always_visible': False}
+        )
 
     return dcc.RangeSlider(
         id='seculo-slider',
         min=seculo_min,
         max=seculo_max,
-        value=[seculo_min, seculo_max],
+        value=[original_seculo_min, original_seculo_max],
         marks=seculo_values_marks,
-        step=None,
+        step=1,
         allowCross=True,
-        vertical=False
+        vertical=False,
+        persistence=False,
+        disabled=False
     )
